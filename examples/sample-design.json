@@ -1,0 +1,94 @@
+{
+  "version": "1.0",
+  "gridConfig": {
+    "width": 20,
+    "height": 20,
+    "hexSize": 30
+  },
+  "hexes": {
+    "0,0": {
+      "type": "plant",
+      "plantData": {
+        "commonName": "Tomato",
+        "latinName": "Solanum lycopersicum",
+        "plantingDate": "2024-04-15",
+        "harvestDate": "2024-08-15",
+        "matureHeight": {
+          "value": 6,
+          "unit": "ft"
+        },
+        "canopyDiameter": {
+          "value": 2,
+          "unit": "ft"
+        }
+      }
+    },
+    "1,0": {
+      "type": "plant",
+      "plantData": {
+        "commonName": "Basil",
+        "latinName": "Ocimum basilicum",
+        "plantingDate": "2024-05-01",
+        "harvestDate": "2024-09-01",
+        "matureHeight": {
+          "value": 2,
+          "unit": "ft"
+        },
+        "canopyDiameter": {
+          "value": 1,
+          "unit": "ft"
+        }
+      }
+    },
+    "2,0": {
+      "type": "plant",
+      "plantData": {
+        "commonName": "Pepper",
+        "latinName": "Capsicum annuum",
+        "plantingDate": "2024-04-20",
+        "harvestDate": "2024-08-20",
+        "matureHeight": {
+          "value": 3,
+          "unit": "ft"
+        },
+        "canopyDiameter": {
+          "value": 1.5,
+          "unit": "ft"
+        }
+      }
+    },
+    "0,1": {
+      "type": "structure",
+      "plantData": null
+    },
+    "1,1": {
+      "type": "pathway",
+      "plantData": null
+    },
+    "-1,0": {
+      "type": "plant",
+      "plantData": {
+        "commonName": "Lettuce",
+        "latinName": "Lactuca sativa",
+        "plantingDate": "2024-03-15",
+        "harvestDate": "2024-06-15",
+        "matureHeight": {
+          "value": 0.5,
+          "unit": "ft"
+        },
+        "canopyDiameter": {
+          "value": 0.75,
+          "unit": "ft"
+        }
+      }
+    }
+  },
+  "overlay": {
+    "image": null,
+    "x": 0,
+    "y": 0,
+    "scale": 1,
+    "opacity": 0.5,
+    "locked": false
+  }
+}
