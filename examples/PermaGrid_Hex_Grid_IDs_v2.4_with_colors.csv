@@ -1,0 +1,167 @@
+type,id,name,color
+plant,1,Black Locust,#DEDED7
+plant,2,American Ginseng,#398839
+plant,3,Sugar Maple,#3FA63F
+plant,4,White Oak,#EBEBDF
+plant,5,American Beech,#3D9E3D
+plant,6,Pawpaw,#40AF40
+plant,7,Serviceberry,#388038
+plant,8,Hazelnut,#3A893A
+plant,9,Shiitake,#43BE43
+plant,10,Elderberry,#562679
+plant,11,Black Walnut,#1F1F3C
+plant,12,Jerusalem Artichoke,#3B903B
+plant,13,Comfrey,#3A8A3A
+plant,14,Anise Hyssop,#3FAB3F
+plant,15,Garlic,#3A8A3A
+plant,16,Corn,#3B8E3B
+plant,17,Blueberry,#3781CC
+plant,18,Raspberry,#C83232
+plant,19,Apple,#3FAC3F
+plant,20,Chestnut,#388038
+plant,21,American Persimmon,#398539
+plant,22,Pear,#3FA73F
+plant,23,Plum,#8031B8
+plant,24,Sour Cherry,#C93A3A
+plant,25,Peach,#388238
+plant,26,Hardy Apricot,#4CC44C
+plant,27,Quince,#4CC44C
+plant,28,Asian Pear,#41B641
+plant,29,Hardy Kiwi,#3EA13E
+plant,30,Grapevine (cold-hardy),#602B86
+plant,31,Honeyberry / Haskap,#4BC44B
+plant,32,American Plum,#692E93
+plant,33,Black Currant,#AD3535
+plant,34,Gooseberry,#41BC41
+plant,35,Butternut / Heartnut,#40B140
+plant,36,Wild Strawberry,#B23131
+plant,37,Juneberry / Serviceberry (cultivar),#41B841
+plant,38,Aronia / Chokeberry,#3EA23E
+plant,39,American Cranberrybush,#CA3535
+plant,40,Nannyberry,#3A8C3A
+plant,41,Red-osier Dogwood,#C03737
+plant,42,Wild Grape,#5C2A80
+plant,43,Groundnut,#40B440
+plant,44,Beach Plum,#7F31B7
+plant,45,Mulberry,#47C147
+plant,46,Blackberry (hardy),#441E5F
+plant,47,Sea Buckthorn,#3B903B
+plant,48,Rose (hips),#D45C5C
+plant,49,Honey Locust,#B3DAB3
+plant,50,Yarrow,#D5D5BA
+plant,51,Echinacea / Purple Coneflower,#8D41C3
+plant,52,Bee Balm / Wild Bergamot,#CF4545
+plant,53,Calendula,#DC8344
+plant,54,Chamomile,#E1DB93
+plant,55,Peppermint,#3B913B
+plant,56,Lemon Balm,#3EA53E
+plant,57,Valerian,#387F38
+plant,58,Skullcap,#49C249
+plant,59,Stinging Nettle,#398639
+plant,60,Chives,#3B8F3B
+plant,61,Horseradish,#4DC54D
+plant,62,Ramps,#40B240
+plant,63,Goldenseal,#D0B945
+plant,64,Winter Squash,#3FA63F
+plant,65,Zucchini / Summer Squash,#40B140
+plant,66,Pole Bean,#4BC34B
+plant,67,Dry Bean,#398439
+plant,68,Pea,#42BD42
+plant,69,Sunflower,#DBCE3A
+plant,70,Potato,#3EA13E
+plant,71,Sweet Potato,#388238
+plant,72,Tomato,#3B8E3B
+plant,73,Pepper,#3D993D
+plant,74,Lettuce,#4BC44B
+plant,75,Kale,#4BC44B
+plant,76,Carrot,#3D9A3D
+plant,77,Onion,#3B8E3B
+plant,78,White Clover,#D6D6C7
+plant,100,Unknown Tree,#388738
+plant,101,Asparagus,#398439
+plant,102,Basil,#3D9A3D
+plant,103,Calendula,#DC8344
+plant,104,Cantaloupe,#3A8D3A
+plant,105,Carrot,#3D9A3D
+plant,106,Chamomile,#E1DB93
+plant,107,Chives,#3B8F3B
+plant,108,Cilantro,#398539
+plant,109,Corn - Gourmet Popcorn,#46C046
+plant,110,Corn - Hopi Maize,#3B923B
+plant,111,Corn - Snow Puff Popcorn,#40B140
+plant,112,Corn - Sweet Corn,#48C248
+plant,113,Cucumber,#388038
+plant,114,Daisy,#3EA43E
+plant,115,Fennel,#41BD41
+plant,116,Forget Me Not,#41B641
+plant,117,Foxglove,#3B913B
+plant,118,Garden Bean,#3A893A
+plant,119,Honeydew,#3B923B
+plant,120,Kale,#4BC44B
+plant,121,Lavender,#9950CD
+plant,122,Lemon Balm,#3EA53E
+plant,123,Lettuce,#4BC44B
+plant,124,Marigold,#E98C4A
+plant,125,Mesclun,#3A8D3A
+plant,126,Morning Glory,#3D993D
+plant,127,Nasturtium,#40B140
+plant,128,Onion (Bunching),#41BB41
+plant,129,Oregano,#3EA23E
+plant,130,Parsley,#45BF45
+plant,131,Parsley,#45BF45
+plant,132,Pea - Burpeeana Early,#41B641
+plant,133,Pea - Dual Peas,#40AF40
+plant,134,Pea - Spring Peas,#3FAB3F
+plant,135,Pea - Sugar Daddy,#43BE43
+plant,136,Pea - Sweet,#47C047
+plant,137,Pepper - Cayenne Long Slim Red,#CF4545
+plant,138,Pepper - Cubanelle,#3C933C
+plant,139,Pepper - Grand Bell Mix,#3FAA3F
+plant,140,Poppies,#41B941
+plant,141,Radish,#3A8C3A
+plant,142,Rainbow Carrots,#4BC34B
+plant,143,Rosemary,#C94A4A
+plant,144,Sage,#3A8D3A
+plant,145,Snapdragon,#3FAA3F
+plant,146,Squash - Butternut,#3FAC3F
+plant,147,Summer Squash 'Green Eggs',#37BE37
+plant,148,Thyme,#44BF44
+plant,149,Tomato - Big Boy Hybrid Heirloom,#4CC44C
+plant,150,Tomato - Black Sea Man,#202040
+plant,151,Tomato - Monster,#388038
+plant,152,Tomato - Yellow Pear,#D9CE57
+plant,153,Wildflower Mix (Shade),#3A8C3A
+plant,154,Wildflower Mix (Sunny),#40B440
+plant,155,Zucchini,#3EA03E
+path,1,Woodchip Pathway,#8E4C21
+path,2,Stone Pathway,#BA7924
+path,3,Swale,#834220
+path,4,Berm,#A66423
+path,5,Concrete,#B77724
+path,6,Asphault,#D29725
+path,7,Road,#CB8E25
+path,8,Contour Line (730ft),#E6E6E6
+path,9,Contour Line (720ft),#D3D3D3
+path,10,Contour Line (710ft),#C0C0C0
+path,11,Contour Line (700ft),#ADADAD
+path,12,Contour Line (690ft),#9A9A9A
+path,13,Contour Line (680ft),#888888
+path,14,Contour Line (670ft),#757575
+path,15,Contour Line (660ft),#626262
+path,16,Contour Line (650ft),#4F4F4F
+path,17,Contour Line (640ft),#3C3C3C
+water,1,Water Spigot,#1E6791
+water,2,Rain Barrel,#2366A7
+water,3,Pond,#2860BD
+water,4,Cistern,#2760BB
+water,5,River,#20679A
+water,6,Lake,#2266A4
+water,7,Storm Drain,#2564AF
+structure,1,Building,#882CA1
+structure,2,Wall,#4C2676
+structure,3,Fire Pit,#57287F
+structure,4,Utility Pole,#822C9D
+structure,5,Stairs,#AD2FB6
+structure,6,Patio,#682A8C
+structure,7,Deck,#802C9C
+structure,8,Property Boundary,#722B92
