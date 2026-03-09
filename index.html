@@ -1,1493 +1,367 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Permaculture Hex Grid Design Map Editor - Create professional permaculture garden designs">
-    <title>Permaculture Hex Grid Editor</title>
-    <style>
-        /* ============================================
-           CSS RESET & BASE STYLES
-           ============================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Permaculture Hex Grid Map Editor v14.9.12 (Plants + Structures + Paths + Water)</title>
+  <style>
+    :root {
+      --bg: #0f1216;
+      --panel: #151a21;
+      --panel2: #10151c;
+      --text: #e7edf5;
+      --muted: #a9b4c2;
+      --stroke: rgba(255,255,255,.10);
+      --stroke2: rgba(255,255,255,.16);
+      --accent: #6ee7ff;
+      --danger: #ff6e6e;
+      --good: #7CFF9A;
+      --warn: #ffd36e;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
 
-        :root {
-            --primary-color: #4a7c59;
-            --secondary-color: #8b9a46;
-            --accent-color: #d4a574;
-            --bg-color: #f5f5f0;
-            --surface-color: #ffffff;
-            --text-color: #2c3e2d;
-            --border-color: #d0d0d0;
-            --hover-color: #6b9c7a;
-            --selected-color: #8b9a46;
-            --structure-color: #8b7355;
-            --pathway-color: #c4c4c4;
-            --shadow: 0 2px 8px rgba(0,0,0,0.1);
-            --shadow-lg: 0 4px 16px rgba(0,0,0,0.15);
-            --border-radius: 8px;
-            --transition: all 0.2s ease;
-        }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+    * { box-sizing: border-box; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      height: 100%;
+      width: 100%;
+    }
 
-        /* ============================================
-           LAYOUT
-           ============================================ */
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            width: 100vw;
-        }
+    .stage {
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(1200px 800px at 30% 20%, rgba(110,231,255,.07), transparent 55%),
+                  radial-gradient(1000px 900px at 70% 70%, rgba(124,255,154,.06), transparent 60%),
+                  linear-gradient(180deg, #0e1116, #0b0e12);
+      border-right: 1px solid var(--stroke);
+      touch-action: none;
+    }
 
-        .header {
-            background: var(--surface-color);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem;
-            box-shadow: var(--shadow);
-            z-index: 100;
-        }
+    canvas { display: block; width: 100%; height: 100%; }
 
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
+    .hud {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      padding: 10px;
+      background: rgba(21,26,33,.85);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      flex-wrap: wrap;
+      max-width: calc(100% - 24px);
+      user-select: none;
+    }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
+    .group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding-right: 10px;
+      border-right: 1px solid var(--stroke);
+    }
+    .group:last-child { border-right: none; padding-right: 0; }
 
-        .header-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+    input[type="number"], input[type="text"], select, textarea {
+      width: 100%;
+      border: 1px solid var(--stroke2);
+      background: var(--panel2);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 10px;
+      outline: none;
+      font-size: 14px;
+    }
+    textarea { min-height: 76px; resize: vertical; }
 
-        .main-content {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-            position: relative;
-        }
+    .btn {
+      border: 1px solid var(--stroke2);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      color: var(--text);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 34px;
+    }
+    .btn:hover { border-color: rgba(110,231,255,.35); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { border-color: rgba(110,231,255,.35); box-shadow: 0 0 0 2px rgba(110,231,255,.12) inset; }
+    .btn.danger { border-color: rgba(255,110,110,.35); }
+    .btn.good { border-color: rgba(124,255,154,.35); }
+    .btn.tiny { padding: 6px 8px; border-radius: 10px; min-height: 30px; font-size: 12px; }
 
-        .sidebar {
-            width: 320px;
-            background: var(--surface-color);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            transition: transform var(--transition);
-            z-index: 10;
-        }
+    .chiprow { display:flex; gap:6px; flex-wrap: wrap; }
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid var(--stroke2);
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+    .legendRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      background: rgba(0,0,0,.20);
+    }
+    .legendMain {
+      display:flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .legendTop {
+      display:flex;
+      gap: 10px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+    .legendKey {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+    }
+    .legendName {
+      font-size: 12px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 260px;
+    }
+    .legendMeta {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
 
-        .sidebar.closed {
-            transform: translateX(-100%);
-        }
+    .chip {
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke2);
+      color: var(--muted);
+      background: rgba(0,0,0,.22);
+    }
 
-        .canvas-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            background: #e8e8e8;
-            touch-action: none;
-        }
+    .panel {
+      background: linear-gradient(180deg, rgba(21,26,33,.92), rgba(16,21,28,.92));
+      padding: 14px;
+      overflow: auto;
+    }
 
-        #hexCanvas {
-            display: block;
-            cursor: crosshair;
-            touch-action: none;
-        }
+    .card {
+      background: rgba(10,14,18,.40);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
 
-        .overlay-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            opacity: 0.5;
-            transition: opacity var(--transition);
-        }
+    .title {
+      display:flex; align-items:center; justify-content: space-between; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .title h2 { font-size: 14px; margin: 0; letter-spacing: .2px; }
+    .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-        .overlay-image.dragging {
-            pointer-events: all;
-            cursor: move;
-        }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
-        /* ============================================
-           BUTTONS & CONTROLS
-           ============================================ */
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: var(--border-radius);
-            background: var(--primary-color);
-            color: white;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: var(--transition);
-            min-height: 44px;
-            min-width: 44px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
+    .sep { height: 1px; background: var(--stroke); margin: 10px 0; }
 
-        .btn:hover {
-            background: var(--hover-color);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow);
-        }
+    .kvs { display:grid; grid-template-columns: 140px 1fr; gap: 6px 10px; font-size: 13px; }
+    .kvs div:nth-child(odd) { color: var(--muted); }
+    .mono { font-family: var(--mono); }
 
-        .btn:active {
-            transform: translateY(0);
-        }
+    .footnote { font-size: 12px; color: var(--muted); line-height: 1.35; }
 
-        .btn-secondary {
-            background: var(--secondary-color);
-        }
+    .file {
+      display:flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .file input[type="file"] { color: var(--muted); }
 
-        .btn-small {
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-            min-height: 36px;
-        }
+    .kbd { font-family: var(--mono); font-size: 12px; padding: 2px 6px; border-radius: 6px;
+      border: 1px solid var(--stroke2); background: rgba(0,0,0,.25); color: var(--muted); }
 
-        .btn-icon {
-            padding: 0.5rem;
-            min-width: 44px;
-        }
+    .hint { color: var(--muted); font-size: 12px; }
 
-        .btn-group {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .toggle-btn {
-            background: var(--surface-color);
-            border: 2px solid var(--border-color);
-            color: var(--text-color);
-        }
-
-        .toggle-btn.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        /* ============================================
-           SIDEBAR SECTIONS
-           ============================================ */
-        .sidebar-section {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .sidebar-section h2 {
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-            color: var(--primary-color);
-        }
-
-        .sidebar-section h3 {
-            font-size: 1rem;
-            margin-bottom: 0.75rem;
-            color: var(--text-color);
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-            min-height: 44px;
-            transition: var(--transition);
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
-        }
-
-        .form-row {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-        }
-
-        /* ============================================
-           HEX TYPE SELECTOR
-           ============================================ */
-        .hex-type-selector {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .hex-type-btn {
-            flex: 1;
-            padding: 0.75rem;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius);
-            background: var(--surface-color);
-            cursor: pointer;
-            transition: var(--transition);
-            text-align: center;
-            min-height: 44px;
-        }
-
-        .hex-type-btn.active {
-            border-color: var(--primary-color);
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .hex-type-btn[data-type="structure"] {
-            border-color: var(--structure-color);
-        }
-
-        .hex-type-btn[data-type="structure"].active {
-            background: var(--structure-color);
-            color: white;
-        }
-
-        .hex-type-btn[data-type="pathway"] {
-            border-color: var(--pathway-color);
-        }
-
-        .hex-type-btn[data-type="pathway"].active {
-            background: var(--pathway-color);
-            color: white;
-        }
-
-        /* ============================================
-           MOBILE OPTIMIZATIONS
-           ============================================ */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                bottom: 0;
-                width: 100%;
-                max-width: 400px;
-                z-index: 1000;
-                box-shadow: var(--shadow-lg);
-            }
-
-            .sidebar.closed {
-                transform: translateX(-100%);
-            }
-
-            .header-content {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .header-actions {
-                width: 100%;
-            }
-
-            .header-actions .btn {
-                flex: 1;
-            }
-
-            .form-row {
-                flex-direction: column;
-            }
-        }
-
-        /* ============================================
-           MODAL & OVERLAYS
-           ============================================ */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--surface-color);
-            border-radius: var(--border-radius);
-            padding: 2rem;
-            max-width: 500px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-color);
-            padding: 0.5rem;
-            min-width: 44px;
-            min-height: 44px;
-        }
-
-        /* ============================================
-           UTILITY CLASSES
-           ============================================ */
-        .hidden {
-            display: none !important;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .mb-1 { margin-bottom: 0.5rem; }
-        .mb-2 { margin-bottom: 1rem; }
-        .mb-3 { margin-bottom: 1.5rem; }
-
-        .mt-1 { margin-top: 0.5rem; }
-        .mt-2 { margin-top: 1rem; }
-        .mt-3 { margin-top: 1.5rem; }
-
-        /* ============================================
-           LOADING & FEEDBACK
-           ============================================ */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            background: var(--text-color);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-lg);
-            z-index: 3000;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        /* ============================================
-           MOBILE MENU TOGGLE
-           ============================================ */
-        .menu-toggle {
-            display: none;
-        }
-
-        @media (max-width: 768px) {
-            .menu-toggle {
-                display: block;
-            }
-        }
-    </style>
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .panel { border-top: 1px solid var(--stroke); }
+    }
+  
+    /* MCP / Inspector */
+    .statusDot{width:10px;height:10px;border-radius:999px;display:inline-block;border:1px solid var(--stroke2);}
+    .statusDot.ok{background: rgba(124,255,154,.85);}
+    .statusDot.bad{background: rgba(255,110,110,.85);}
+    .statusDot.mid{background: rgba(255,211,110,.85);}
+    .log{
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(0,0,0,.20);
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 10px;
+      max-height: 180px;
+      overflow: auto;
+      color: rgba(231,237,245,.92);
+    }
+    .smallBtnRow{display:flex; gap:8px; flex-wrap:wrap;}
+</style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo">🌱 Permaculture Hex Editor</div>
-                <div class="header-actions">
-                    <button class="btn btn-icon menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
-                    <button class="btn btn-small" id="exportBtn">💾 Export</button>
-                    <button class="btn btn-small" id="importBtn">📂 Import</button>
-                    <button class="btn btn-small" id="clearBtn">🗑️ Clear</button>
-                </div>
-            </div>
-        </header>
+  <div class="app">
+    <div class="stage" id="stage">
+      <canvas id="c"></canvas>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Sidebar -->
-            <aside class="sidebar" id="sidebar">
-                <!-- Grid Configuration -->
-                <div class="sidebar-section">
-                    <h2>Grid Settings</h2>
-                    <div class="form-group">
-                        <label for="gridWidth">Width (hexes)</label>
-                        <input type="number" id="gridWidth" min="5" max="100" value="20">
-                    </div>
-                    <div class="form-group">
-                        <label for="gridHeight">Height (hexes)</label>
-                        <input type="number" id="gridHeight" min="5" max="100" value="20">
-                    </div>
-                    <div class="form-group">
-                        <label for="hexSize">Hex Size (pixels)</label>
-                        <input type="number" id="hexSize" min="10" max="100" value="30">
-                    </div>
-                    <button class="btn btn-secondary" id="applyGridBtn">Apply Grid Settings</button>
-                </div>
+      <div class="hud">
+        <div class="group">
+          <div style="min-width: 170px;">
+            <label>Tool</label>
+            <select id="tool">
+              <option value="plant">Plant paint (by ID)</option>
+              <option value="structure">Structure paint (by ID)</option>
+              <option value="path">Path paint (by ID)</option>
+              <option value="water">Water paint (by ID)</option>
+              <option value="movebg">Move background image</option>
+              <option value="erase">Erase</option>
+              <option value="select">Select</option>
+              <option value="multiselect">Multi-select</option>
+              <option value="pan">Pan only</option>
+            </select>
+          </div>
+          <div style="width: 120px;">
+            <label>Value / ID</label>
+            <input id="valueId" type="number" min="0" step="1" value="1" />
+          </div>
+          <div style="width: 96px;">
+            <label>Pos (1–6)</label>
+            <input id="slotPos" type="number" min="1" max="6" step="1" value="1" />
+          </div>
+          <div style="width: 120px; display:flex; gap:10px; align-items:flex-end;">
+            <label style="display:flex; align-items:center; gap:8px; margin:0;">
+              <input id="slotAuto" type="checkbox" checked />
+              <span style="font-size:12px; opacity:.9;">Auto</span>
+            </label>
+          </div>
+          <div style="width: 150px; display:flex; gap:10px; align-items:flex-end;">
+            <label style="display:flex; align-items:center; gap:8px; margin:0;">
+              <input id="stackPaint" type="checkbox" />
+              <span style="font-size:12px; opacity:.9;">Multi-slot</span>
+            </label>
+          </div>
 
-                <!-- Hex Type Selection -->
-                <div class="sidebar-section">
-                    <h2>Hex Type</h2>
-                    <div class="hex-type-selector">
-                        <button class="hex-type-btn active" data-type="plant" id="typePlant">🌿 Plant</button>
-                        <button class="hex-type-btn" data-type="structure" id="typeStructure">🏠 Structure</button>
-                        <button class="hex-type-btn" data-type="pathway" id="typePathway">🛤️ Pathway</button>
-                    </div>
-                </div>
+          <div style="width: 120px;">
+            <label>Brush radius</label>
+            <input id="brushRadius" type="number" min="0" max="30" step="1" value="0" />
+          </div>
 
-                <!-- Plant Data Form -->
-                <div class="sidebar-section" id="plantDataSection">
-                    <h2>Plant Information</h2>
-                    <div class="form-group">
-                        <label for="commonName">Common Name</label>
-                        <input type="text" id="commonName" placeholder="e.g., Tomato">
-                    </div>
-                    <div class="form-group">
-                        <label for="latinName">Latin Name</label>
-                        <input type="text" id="latinName" placeholder="e.g., Solanum lycopersicum">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="plantingDate">Planting Date</label>
-                            <input type="date" id="plantingDate">
-                        </div>
-                        <div class="form-group">
-                            <label for="harvestDate">Harvest Date</label>
-                            <input type="date" id="harvestDate">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="matureHeight">Mature Height</label>
-                            <div class="form-row">
-                                <input type="number" id="matureHeight" placeholder="0" step="0.1" min="0">
-                                <select id="heightUnit">
-                                    <option value="ft">ft</option>
-                                    <option value="m">m</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="canopyDiameter">Canopy Diameter</label>
-                            <div class="form-row">
-                                <input type="number" id="canopyDiameter" placeholder="0" step="0.1" min="0">
-                                <select id="diameterUnit">
-                                    <option value="ft">ft</option>
-                                    <option value="m">m</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="btn" id="savePlantDataBtn">Save Plant Data</button>
-                </div>
+          <div style="width: 150px;">
+            <label style="margin-bottom:6px;">ID labels</label>
+            <label style="display:flex; align-items:center; gap:8px; margin:0;">
+              <input id="toggleIds" type="checkbox" checked />
+              <span style="font-size:12px; opacity:.9;">Show IDs</span>
+            </label>
+          </div>
+          <div style="width: 120px;">
+            <label>Font size</label>
+            <input id="idFontSize" type="number" min="6" max="72" step="1" value="13" />
+          </div>
 
-                <!-- Image Overlay -->
-                <div class="sidebar-section">
-                    <h2>Background Image</h2>
-                    <div class="form-group">
-                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
-                        <button class="btn btn-secondary" id="uploadImageBtn">📷 Upload Image</button>
-                    </div>
-                    <div id="overlayControls" class="hidden">
-                        <div class="form-group">
-                            <label for="opacitySlider">Opacity: <span id="opacityValue">50%</span></label>
-                            <input type="range" id="opacitySlider" min="0" max="100" value="50">
-                        </div>
-                        <div class="form-group">
-                            <label for="scaleSlider">Scale: <span id="scaleValue">100%</span></label>
-                            <input type="range" id="scaleSlider" min="10" max="200" value="100">
-                        </div>
-                        <div class="btn-group">
-                            <button class="btn btn-small" id="lockOverlayBtn">🔒 Lock</button>
-                            <button class="btn btn-small btn-secondary" id="removeOverlayBtn">Remove</button>
-                        </div>
-                    </div>
-                    <p style="font-size: 0.875rem; color: #666; margin-top: 0.5rem;">
-                        Drag & drop an image onto the canvas to use as background
-                    </p>
-                </div>
 
-                <!-- Zoom Controls -->
-                <div class="sidebar-section">
-                    <h2>View Controls</h2>
-                    <div class="btn-group">
-                        <button class="btn btn-icon" id="zoomInBtn">+</button>
-                        <button class="btn btn-icon" id="zoomOutBtn">−</button>
-                        <button class="btn btn-icon" id="resetZoomBtn">⌂</button>
-                    </div>
-                    <p style="font-size: 0.875rem; color: #666; margin-top: 0.5rem;">
-                        Use mouse wheel or pinch to zoom, drag to pan
-                    </p>
-                </div>
-            </aside>
-
-            <!-- Canvas Container -->
-            <div class="canvas-container" id="canvasContainer">
-                <canvas id="hexCanvas"></canvas>
-                <img id="overlayImage" class="overlay-image" alt="Background overlay">
-            </div>
         </div>
+
+        <div class="group">
+          <div style="width: 120px;">
+            <label>Hex size</label>
+            <input id="hexSize" type="number" min="8" max="90" step="1" value="28" />
+          </div>
+          <div style="width: 140px;">
+            <label>Grid radius</label>
+            <input id="gridRadius" type="number" min="1" max="200" step="1" value="18" />
+          </div>
+          <div style="width: 140px;">
+            <label>Orientation</label>
+            <select id="orientation">
+              <option value="pointy" selected>Pointy top</option>
+              <option value="flat">Flat top</option>
+            </select>
+          </div>
+          <div class="chiprow" style="align-self:flex-end; padding-bottom: 2px;">
+            <span class="chip" id="chipZoom">zoom 100%</span>
+            <span class="chip" id="chipCount">tiles 0</span>
+            <span class="chip" id="chipSel">sel 0</span>
+          </div>
+        </div>
+
+        <div class="group">
+          <button class="btn tiny primary" id="fit">Fit</button>
+          <button class="btn tiny" id="center">Center</button>
+          <button class="btn tiny" id="copyBtn">Copy</button>
+          <button class="btn tiny" id="pasteBtn">Paste</button>
+          <button class="btn tiny" id="undoBtn">Undo</button>
+          <button class="btn tiny" id="redoBtn">Redo</button>
+          <button class="btn tiny danger" id="clear">Clear map</button>
+        </div>
+      </div>
     </div>
 
-    <!-- Hidden file input for import -->
-    <input type="file" id="importFile" accept=".json" style="display: none;">
+    <aside class="panel">
+      <div class="card" id="versionManagerPanel">
+        <div class="title">
+          <div>
+            <h2>HexGrid Map Editor</h2>
+            <div class="sub">Version Manager</div>
+          </div>
+        </div>
+
+        <div class="kvs">
+          <div>Version</div><div class="mono" id="appVersionDisplay">v14.9.12</div>
+          <div>License</div><div class="mono">© Copyleft 2026</div>
+          <div>Author</div><div>Dillon Lee</div>
+          <div>Co-author</div><div>ChatGPT — Model: GPT 5.4 Thinking</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">
+          <div>
+            <h2>Selection</h2>
+            <div class="sub">Click/tap to select. Use the Select or Multi-select tools.</div>
+          </div>
+          <button class="btn tiny danger" id="clearSel">Clear selection</button>
+        </div>
+
+        <div class="kvs">
+          <div>Selected count</div><div class="mono" id="selCount">0</div>
+          <div>Last hex (q,r,s)</div><div class="mono" id="selAxial">—</div>
+          <div>Type</div><div class="mono" id="selType">—</div>
+          <div>Value / ID</div><div class="mono" id="selValue">—</div>
 
-    <script>
-        // ============================================
-        // APPLICATION STATE
-        // ============================================
-        const AppState = {
-            version: "1.0",
-            gridConfig: {
-                width: 20,
-                height: 20,
-                hexSize: 30
-            },
-            hexes: {},
-            selectedHex: null,
-            currentHexType: "plant",
-            overlay: {
-                image: null,
-                x: 0,
-                y: 0,
-                scale: 1,
-                opacity: 0.5,
-                locked: false
-            },
-            view: {
-                offsetX: 0,
-                offsetY: 0,
-                zoom: 1
-            },
-            hasUnsavedChanges: false
-        };
-
-        // ============================================
-        // CANVAS SETUP
-        // ============================================
-        const canvas = document.getElementById('hexCanvas');
-        const ctx = canvas.getContext('2d');
-        let dpr = window.devicePixelRatio || 1;
-
-        function resizeCanvas() {
-            const container = document.getElementById('canvasContainer');
-            canvas.width = container.clientWidth * dpr;
-            canvas.height = container.clientHeight * dpr;
-            canvas.style.width = container.clientWidth + 'px';
-            canvas.style.height = container.clientHeight + 'px';
-            ctx.scale(dpr, dpr);
-            render();
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // ============================================
-        // HEX GRID MATHEMATICS
-        // ============================================
-        class HexGrid {
-            static hexToPixel(q, r, size) {
-                const x = size * (Math.sqrt(3) * q + Math.sqrt(3) / 2 * r);
-                const y = size * (3 / 2 * r);
-                return { x, y };
-            }
-
-            static pixelToHex(x, y, size) {
-                const q = (Math.sqrt(3) / 3 * x - 1 / 3 * y) / size;
-                const r = (2 / 3 * y) / size;
-                return this.roundHex({ q, r });
-            }
-
-            static roundHex(hex) {
-                let q = Math.round(hex.q);
-                let r = Math.round(hex.r);
-                const s = Math.round(-hex.q - hex.r);
-
-                const qDiff = Math.abs(q - hex.q);
-                const rDiff = Math.abs(r - hex.r);
-                const sDiff = Math.abs(s - (-hex.q - hex.r));
-
-                if (qDiff > rDiff && qDiff > sDiff) {
-                    q = -r - s;
-                } else if (rDiff > sDiff) {
-                    r = -q - s;
-                }
-
-                return { q, r };
-            }
-
-            static getHexCorners(q, r, size) {
-                const center = this.hexToPixel(q, r, size);
-                const corners = [];
-                for (let i = 0; i < 6; i++) {
-                    const angle = Math.PI / 3 * i;
-                    corners.push({
-                        x: center.x + size * Math.cos(angle),
-                        y: center.y + size * Math.sin(angle)
-                    });
-                }
-                return corners;
-            }
-
-            static pointInHex(px, py, q, r, size) {
-                const center = this.hexToPixel(q, r, size);
-                const dx = px - center.x;
-                const dy = py - center.y;
-                return Math.sqrt(dx * dx + dy * dy) <= size;
-            }
-        }
-
-        // ============================================
-        // RENDERING
-        // ============================================
-        function render() {
-            const container = document.getElementById('canvasContainer');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-
-            ctx.clearRect(0, 0, width, height);
-            ctx.save();
-
-            // Apply view transform
-            ctx.translate(AppState.view.offsetX, AppState.view.offsetY);
-            ctx.scale(AppState.view.zoom, AppState.view.zoom);
-
-            const { width: gridWidth, height: gridHeight, hexSize } = AppState.gridConfig;
-            const centerX = width / 2 / AppState.view.zoom - AppState.view.offsetX / AppState.view.zoom;
-            const centerY = height / 2 / AppState.view.zoom - AppState.view.offsetY / AppState.view.zoom;
-
-            // Draw hexes
-            for (let q = -Math.floor(gridWidth / 2); q <= Math.floor(gridWidth / 2); q++) {
-                for (let r = -Math.floor(gridHeight / 2); r <= Math.floor(gridHeight / 2); r++) {
-                    const hexKey = `${q},${r}`;
-                    const hexData = AppState.hexes[hexKey];
-                    const hexCenter = HexGrid.hexToPixel(q, r, hexSize);
-                    const screenX = centerX + hexCenter.x;
-                    const screenY = centerY + hexCenter.y;
-
-                    // Skip if outside viewport
-                    if (screenX < -hexSize * 2 || screenX > width / AppState.view.zoom + hexSize * 2 ||
-                        screenY < -hexSize * 2 || screenY > height / AppState.view.zoom + hexSize * 2) {
-                        continue;
-                    }
-
-                    drawHex(q, r, hexSize, hexData, screenX, screenY);
-                }
-            }
-
-            ctx.restore();
-        }
-
-        function drawHex(q, r, size, hexData, x, y) {
-            const corners = HexGrid.getHexCorners(q, r, size);
-            const isSelected = AppState.selectedHex && AppState.selectedHex.q === q && AppState.selectedHex.r === r;
-
-            ctx.beginPath();
-            ctx.moveTo(corners[0].x + x, corners[0].y + y);
-            for (let i = 1; i < corners.length; i++) {
-                ctx.lineTo(corners[i].x + x, corners[i].y + y);
-            }
-            ctx.closePath();
-
-            // Determine fill color
-            let fillColor = '#f0f0f0';
-            if (hexData) {
-                switch (hexData.type) {
-                    case 'plant':
-                        fillColor = hexData.plantData?.commonName ? '#c8e6c9' : '#f0f0f0';
-                        break;
-                    case 'structure':
-                        fillColor = '#8b7355';
-                        break;
-                    case 'pathway':
-                        fillColor = '#c4c4c4';
-                        break;
-                }
-            }
-
-            ctx.fillStyle = fillColor;
-            ctx.fill();
-
-            // Draw border
-            ctx.strokeStyle = isSelected ? '#4a7c59' : '#d0d0d0';
-            ctx.lineWidth = isSelected ? 3 : 1;
-            ctx.stroke();
-
-            // Draw label if plant has name
-            if (hexData && hexData.type === 'plant' && hexData.plantData?.commonName) {
-                ctx.fillStyle = '#2c3e2d';
-                ctx.font = `${Math.max(10, size / 3)}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(hexData.plantData.commonName.substring(0, 8), x, y);
-            }
-        }
-
-        // ============================================
-        // HEX SELECTION
-        // ============================================
-        function getHexFromPoint(x, y) {
-            const container = document.getElementById('canvasContainer');
-            const rect = container.getBoundingClientRect();
-            const canvasX = (x - rect.left - AppState.view.offsetX) / AppState.view.zoom;
-            const canvasY = (y - rect.top - AppState.view.offsetY) / AppState.view.zoom;
-
-            const centerX = container.clientWidth / 2 / AppState.view.zoom - AppState.view.offsetX / AppState.view.zoom;
-            const centerY = container.clientHeight / 2 / AppState.view.zoom - AppState.view.offsetY / AppState.view.zoom;
-
-            const { width: gridWidth, height: gridHeight, hexSize } = AppState.gridConfig;
-            let closestHex = null;
-            let minDist = Infinity;
-
-            for (let q = -Math.floor(gridWidth / 2); q <= Math.floor(gridWidth / 2); q++) {
-                for (let r = -Math.floor(gridHeight / 2); r <= Math.floor(gridHeight / 2); r++) {
-                    const hexCenter = HexGrid.hexToPixel(q, r, hexSize);
-                    const screenX = centerX + hexCenter.x;
-                    const screenY = centerY + hexCenter.y;
-
-                    const dx = canvasX - screenX;
-                    const dy = canvasY - screenY;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < hexSize && dist < minDist) {
-                        minDist = dist;
-                        closestHex = { q, r };
-                    }
-                }
-            }
-
-            return closestHex;
-        }
-
-        function selectHex(hex) {
-            AppState.selectedHex = hex;
-            render();
-            updateForm();
-        }
-
-        function updateForm() {
-            if (!AppState.selectedHex) {
-                document.getElementById('plantDataSection').style.display = 'none';
-                return;
-            }
-
-            const hexKey = `${AppState.selectedHex.q},${AppState.selectedHex.r}`;
-            const hexData = AppState.hexes[hexKey];
-
-            if (hexData && hexData.type === 'plant') {
-                document.getElementById('plantDataSection').style.display = 'block';
-                const pd = hexData.plantData || {};
-                document.getElementById('commonName').value = pd.commonName || '';
-                document.getElementById('latinName').value = pd.latinName || '';
-                document.getElementById('plantingDate').value = pd.plantingDate || '';
-                document.getElementById('harvestDate').value = pd.harvestDate || '';
-                document.getElementById('matureHeight').value = pd.matureHeight?.value || '';
-                document.getElementById('heightUnit').value = pd.matureHeight?.unit || 'ft';
-                document.getElementById('canopyDiameter').value = pd.canopyDiameter?.value || '';
-                document.getElementById('diameterUnit').value = pd.canopyDiameter?.unit || 'ft';
-            } else {
-                document.getElementById('plantDataSection').style.display = 'none';
-            }
-
-            // Update hex type buttons
-            const type = hexData?.type || 'plant';
-            document.querySelectorAll('.hex-type-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.type === type);
-            });
-            AppState.currentHexType = type;
-        }
-
-        // ============================================
-        // EVENT HANDLERS
-        // ============================================
-        let isDragging = false;
-        let dragStart = { x: 0, y: 0 };
-        let lastPanPoint = { x: 0, y: 0 };
-
-        canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 0) { // Left click
-                const hex = getHexFromPoint(e.clientX, e.clientY);
-                if (hex) {
-                    selectHex(hex);
-                    applyHexType(hex);
-                } else {
-                    isDragging = true;
-                    dragStart = { x: e.clientX, y: e.clientY };
-                    lastPanPoint = { x: AppState.view.offsetX, y: AppState.view.offsetY };
-                }
-            }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                AppState.view.offsetX = lastPanPoint.x + (e.clientX - dragStart.x);
-                AppState.view.offsetY = lastPanPoint.y + (e.clientY - dragStart.y);
-                render();
-            }
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            AppState.view.zoom = Math.max(0.1, Math.min(5, AppState.view.zoom * delta));
-            render();
-        });
-
-        // Touch events
-        let touchStartDistance = 0;
-        let touchStartZoom = 1;
-
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                const hex = getHexFromPoint(touch.clientX, touch.clientY);
-                if (hex) {
-                    selectHex(hex);
-                    applyHexType(hex);
-                } else {
-                    isDragging = true;
-                    dragStart = { x: touch.clientX, y: touch.clientY };
-                    lastPanPoint = { x: AppState.view.offsetX, y: AppState.view.offsetY };
-                }
-            } else if (e.touches.length === 2) {
-                const touch1 = e.touches[0];
-                const touch2 = e.touches[1];
-                touchStartDistance = Math.hypot(
-                    touch2.clientX - touch1.clientX,
-                    touch2.clientY - touch1.clientY
-                );
-                touchStartZoom = AppState.view.zoom;
-            }
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (e.touches.length === 1 && isDragging) {
-                const touch = e.touches[0];
-                AppState.view.offsetX = lastPanPoint.x + (touch.clientX - dragStart.x);
-                AppState.view.offsetY = lastPanPoint.y + (touch.clientY - dragStart.y);
-                render();
-            } else if (e.touches.length === 2) {
-                const touch1 = e.touches[0];
-                const touch2 = e.touches[1];
-                const distance = Math.hypot(
-                    touch2.clientX - touch1.clientX,
-                    touch2.clientY - touch1.clientY
-                );
-                AppState.view.zoom = Math.max(0.1, Math.min(5, touchStartZoom * (distance / touchStartDistance)));
-                render();
-            }
-        });
-
-        canvas.addEventListener('touchend', () => {
-            isDragging = false;
-        });
-
-        // ============================================
-        // HEX TYPE MANAGEMENT
-        // ============================================
-        function applyHexType(hex) {
-            if (!hex) return;
-            const hexKey = `${hex.q},${hex.r}`;
-            if (!AppState.hexes[hexKey]) {
-                AppState.hexes[hexKey] = {
-                    type: AppState.currentHexType,
-                    plantData: AppState.currentHexType === 'plant' ? {} : null
-                };
-            } else {
-                AppState.hexes[hexKey].type = AppState.currentHexType;
-                if (AppState.currentHexType !== 'plant') {
-                    AppState.hexes[hexKey].plantData = null;
-                } else if (!AppState.hexes[hexKey].plantData) {
-                    AppState.hexes[hexKey].plantData = {};
-                }
-            }
-            AppState.hasUnsavedChanges = true;
-            render();
-            updateForm();
-        }
-
-        document.querySelectorAll('.hex-type-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.hex-type-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                AppState.currentHexType = btn.dataset.type;
-                if (AppState.selectedHex) {
-                    applyHexType(AppState.selectedHex);
-                }
-            });
-        });
-
-        // ============================================
-        // PLANT DATA MANAGEMENT
-        // ============================================
-        document.getElementById('savePlantDataBtn').addEventListener('click', () => {
-            if (!AppState.selectedHex) return;
-
-            const hexKey = `${AppState.selectedHex.q},${AppState.selectedHex.r}`;
-            if (!AppState.hexes[hexKey]) {
-                AppState.hexes[hexKey] = { type: 'plant', plantData: {} };
-            }
-
-            AppState.hexes[hexKey].plantData = {
-                commonName: document.getElementById('commonName').value,
-                latinName: document.getElementById('latinName').value,
-                plantingDate: document.getElementById('plantingDate').value,
-                harvestDate: document.getElementById('harvestDate').value,
-                matureHeight: {
-                    value: parseFloat(document.getElementById('matureHeight').value) || 0,
-                    unit: document.getElementById('heightUnit').value
-                },
-                canopyDiameter: {
-                    value: parseFloat(document.getElementById('canopyDiameter').value) || 0,
-                    unit: document.getElementById('diameterUnit').value
-                }
-            };
-
-            AppState.hasUnsavedChanges = true;
-            render();
-            showToast('Plant data saved');
-        });
-
-        // ============================================
-        // GRID CONFIGURATION
-        // ============================================
-        document.getElementById('applyGridBtn').addEventListener('click', () => {
-            AppState.gridConfig.width = parseInt(document.getElementById('gridWidth').value);
-            AppState.gridConfig.height = parseInt(document.getElementById('gridHeight').value);
-            AppState.gridConfig.hexSize = parseInt(document.getElementById('hexSize').value);
-            AppState.hasUnsavedChanges = true;
-            render();
-            showToast('Grid settings applied');
-        });
-
-        // ============================================
-        // EXPORT/IMPORT
-        // ============================================
-        document.getElementById('exportBtn').addEventListener('click', () => {
-            const data = {
-                version: AppState.version,
-                gridConfig: AppState.gridConfig,
-                hexes: AppState.hexes,
-                overlay: {
-                    ...AppState.overlay,
-                    image: AppState.overlay.image ? document.getElementById('overlayImage').src : null
-                }
-            };
-
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const date = new Date().toISOString().split('T')[0];
-            a.href = url;
-            a.download = `permaculture-design-${date}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Design exported');
-        });
-
-        document.getElementById('importBtn').addEventListener('click', () => {
-            document.getElementById('importFile').click();
-        });
-
-        document.getElementById('importFile').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const data = JSON.parse(event.target.result);
-                    AppState.gridConfig = data.gridConfig || AppState.gridConfig;
-                    AppState.hexes = data.hexes || {};
-                    if (data.overlay?.image) {
-                        AppState.overlay = { ...data.overlay };
-                        document.getElementById('overlayImage').src = data.overlay.image;
-                        document.getElementById('overlayImage').style.display = 'block';
-                        document.getElementById('overlayControls').classList.remove('hidden');
-                        updateOverlayPosition();
-                    }
-                    AppState.hasUnsavedChanges = false;
-                    updateGridInputs();
-                    render();
-                    showToast('Design imported');
-                } catch (error) {
-                    showToast('Error importing file: ' + error.message);
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        function updateGridInputs() {
-            document.getElementById('gridWidth').value = AppState.gridConfig.width;
-            document.getElementById('gridHeight').value = AppState.gridConfig.height;
-            document.getElementById('hexSize').value = AppState.gridConfig.hexSize;
-        }
-
-        // ============================================
-        // IMAGE OVERLAY
-        // ============================================
-        document.getElementById('uploadImageBtn').addEventListener('click', () => {
-            document.getElementById('imageUpload').click();
-        });
-
-        document.getElementById('imageUpload').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                loadOverlayImage(file);
-            }
-        });
-
-        // Drag and drop
-        const canvasContainer = document.getElementById('canvasContainer');
-        canvasContainer.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
-        canvasContainer.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                loadOverlayImage(file);
-            }
-        });
-
-        function loadOverlayImage(file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = document.getElementById('overlayImage');
-                img.src = event.target.result;
-                img.style.display = 'block';
-                AppState.overlay.image = event.target.result;
-                AppState.overlay.x = 0;
-                AppState.overlay.y = 0;
-                AppState.overlay.scale = 1;
-                document.getElementById('overlayControls').classList.remove('hidden');
-                updateOverlayPosition();
-                AppState.hasUnsavedChanges = true;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function updateOverlayPosition() {
-            const img = document.getElementById('overlayImage');
-            if (!img.src) return;
-
-            img.style.left = AppState.overlay.x + 'px';
-            img.style.top = AppState.overlay.y + 'px';
-            img.style.opacity = AppState.overlay.opacity;
-            img.style.transform = `scale(${AppState.overlay.scale})`;
-            img.style.transformOrigin = 'top left';
-        }
-
-        // Overlay controls
-        document.getElementById('opacitySlider').addEventListener('input', (e) => {
-            AppState.overlay.opacity = e.target.value / 100;
-            document.getElementById('opacityValue').textContent = e.target.value + '%';
-            updateOverlayPosition();
-        });
-
-        document.getElementById('scaleSlider').addEventListener('input', (e) => {
-            AppState.overlay.scale = e.target.value / 100;
-            document.getElementById('scaleValue').textContent = e.target.value + '%';
-            updateOverlayPosition();
-        });
-
-        let overlayDragging = false;
-        let overlayDragStart = { x: 0, y: 0 };
-
-        document.getElementById('overlayImage').addEventListener('mousedown', (e) => {
-            if (!AppState.overlay.locked) {
-                overlayDragging = true;
-                overlayDragStart = { x: e.clientX, y: e.clientY };
-                document.getElementById('overlayImage').classList.add('dragging');
-            }
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (overlayDragging) {
-                AppState.overlay.x += e.clientX - overlayDragStart.x;
-                AppState.overlay.y += e.clientY - overlayDragStart.y;
-                overlayDragStart = { x: e.clientX, y: e.clientY };
-                updateOverlayPosition();
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            overlayDragging = false;
-            document.getElementById('overlayImage').classList.remove('dragging');
-        });
-
-        document.getElementById('lockOverlayBtn').addEventListener('click', () => {
-            AppState.overlay.locked = !AppState.overlay.locked;
-            document.getElementById('lockOverlayBtn').textContent = AppState.overlay.locked ? '🔓 Unlock' : '🔒 Lock';
-        });
-
-        document.getElementById('removeOverlayBtn').addEventListener('click', () => {
-            document.getElementById('overlayImage').src = '';
-            document.getElementById('overlayImage').style.display = 'none';
-            document.getElementById('overlayControls').classList.add('hidden');
-            AppState.overlay.image = null;
-            AppState.hasUnsavedChanges = true;
-        });
-
-        // ============================================
-        // ZOOM CONTROLS
-        // ============================================
-        document.getElementById('zoomInBtn').addEventListener('click', () => {
-            AppState.view.zoom = Math.min(5, AppState.view.zoom * 1.2);
-            render();
-        });
-
-        document.getElementById('zoomOutBtn').addEventListener('click', () => {
-            AppState.view.zoom = Math.max(0.1, AppState.view.zoom * 0.8);
-            render();
-        });
-
-        document.getElementById('resetZoomBtn').addEventListener('click', () => {
-            AppState.view.zoom = 1;
-            AppState.view.offsetX = 0;
-            AppState.view.offsetY = 0;
-            render();
-        });
-
-        // ============================================
-        // CLEAR FUNCTIONALITY
-        // ============================================
-        document.getElementById('clearBtn').addEventListener('click', () => {
-            if (confirm('Are you sure you want to clear all hex data? This cannot be undone.')) {
-                AppState.hexes = {};
-                AppState.selectedHex = null;
-                AppState.hasUnsavedChanges = true;
-                render();
-                updateForm();
-                showToast('Grid cleared');
-            }
-        });
-
-        // ============================================
-        // MOBILE MENU TOGGLE
-        // ============================================
-        document.getElementById('menuToggle').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('closed');
-        });
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', (e) => {
-            const sidebar = document.getElementById('sidebar');
-            if (window.innerWidth <= 768 && !sidebar.contains(e.target) && 
-                !e.target.closest('.menu-toggle') && !sidebar.classList.contains('closed')) {
-                sidebar.classList.add('closed');
-            }
-        });
-
-        // ============================================
-        // UTILITY FUNCTIONS
-        // ============================================
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-
-        // ============================================
-        // LOCAL STORAGE AUTO-SAVE
-        // ============================================
-        function saveToLocalStorage() {
-            try {
-                const data = {
-                    version: AppState.version,
-                    gridConfig: AppState.gridConfig,
-                    hexes: AppState.hexes,
-                    overlay: AppState.overlay,
-                    view: AppState.view
-                };
-                localStorage.setItem('permacultureDesign', JSON.stringify(data));
-            } catch (e) {
-                console.warn('Could not save to localStorage:', e);
-            }
-        }
-
-        function loadFromLocalStorage() {
-            try {
-                const saved = localStorage.getItem('permacultureDesign');
-                if (saved) {
-                    const data = JSON.parse(saved);
-                    if (confirm('Load previously saved design from browser storage?')) {
-                        AppState.gridConfig = data.gridConfig || AppState.gridConfig;
-                        AppState.hexes = data.hexes || {};
-                        AppState.view = data.view || AppState.view;
-                        if (data.overlay?.image) {
-                            AppState.overlay = data.overlay;
-                            document.getElementById('overlayImage').src = data.overlay.image;
-                            document.getElementById('overlayImage').style.display = 'block';
-                            document.getElementById('overlayControls').classList.remove('hidden');
-                            updateOverlayPosition();
-                        }
-                        updateGridInputs();
-                        render();
-                        showToast('Design loaded from storage');
-                    }
-                }
-            } catch (e) {
-                console.warn('Could not load from localStorage:', e);
-            }
-        }
-
-        // Auto-save every 30 seconds
-        setInterval(() => {
-            if (AppState.hasUnsavedChanges) {
-                saveToLocalStorage();
-            }
-        }, 30000);
-
-        // Warn before leaving with unsaved changes
-        window.addEventListener('beforeunload', (e) => {
-            if (AppState.hasUnsavedChanges) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        });
-
-        // Load on startup
-        window.addEventListener('load', () => {
-            loadFromLocalStorage();
-        });
-
-        // ============================================
-        // KEYBOARD SHORTCUTS (Desktop)
-        // ============================================
-        document.addEventListener('keydown', (e) => {
-            // Don't trigger shortcuts when typing in inputs
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
-                return;
-            }
-
-            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-            const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
-
-            // Ctrl/Cmd + S: Export
-            if (ctrlKey && e.key === 's') {
-                e.preventDefault();
-                document.getElementById('exportBtn').click();
-            }
-
-            // Ctrl/Cmd + O: Import
-            if (ctrlKey && e.key === 'o') {
-                e.preventDefault();
-                document.getElementById('importBtn').click();
-            }
-
-            // Ctrl/Cmd + Z: Undo (placeholder - can be implemented later)
-            if (ctrlKey && e.key === 'z' && !e.shiftKey) {
-                e.preventDefault();
-                showToast('Undo feature coming soon');
-            }
-
-            // Ctrl/Cmd + Shift + Z: Redo (placeholder)
-            if (ctrlKey && e.shiftKey && e.key === 'Z') {
-                e.preventDefault();
-                showToast('Redo feature coming soon');
-            }
-
-            // +/-: Zoom in/out
-            if (e.key === '+' || e.key === '=') {
-                e.preventDefault();
-                document.getElementById('zoomInBtn').click();
-            }
-            if (e.key === '-' || e.key === '_') {
-                e.preventDefault();
-                document.getElementById('zoomOutBtn').click();
-            }
-
-            // 0: Reset zoom
-            if (e.key === '0') {
-                e.preventDefault();
-                document.getElementById('resetZoomBtn').click();
-            }
-
-            // Escape: Deselect hex or close sidebar on mobile
-            if (e.key === 'Escape') {
-                if (AppState.selectedHex) {
-                    AppState.selectedHex = null;
-                    render();
-                    updateForm();
-                }
-                if (window.innerWidth <= 768) {
-                    document.getElementById('sidebar').classList.add('closed');
-                }
-            }
-
-            // Delete/Backspace: Clear selected hex
-            if ((e.key === 'Delete' || e.key === 'Backspace') && AppState.selectedHex) {
-                e.preventDefault();
-                const hexKey = `${AppState.selectedHex.q},${AppState.selectedHex.r}`;
-                delete AppState.hexes[hexKey];
-                AppState.selectedHex = null;
-                AppState.hasUnsavedChanges = true;
-                render();
-                updateForm();
-                showToast('Hex cleared');
-            }
-        });
-
-        // ============================================
-        // IMPROVED ERROR HANDLING
-        // ============================================
-        window.addEventListener('error', (e) => {
-            console.error('Application error:', e.error);
-            showToast('An error occurred. Check console for details.');
-        });
-
-        // Handle unhandled promise rejections
-        window.addEventListener('unhandledrejection', (e) => {
-            console.error('Unhandled promise rejection:', e.reason);
-            showToast('An error occurred. Check console for details.');
-        });
-
-        // Improve import error handling
-        const originalImportHandler = document.getElementById('importFile').onchange;
-        document.getElementById('importFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (!file.name.endsWith('.json')) {
-                showToast('Please select a JSON file');
-                return;
-            }
-
-            if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                showToast('File too large. Maximum size is 10MB');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const data = JSON.parse(event.target.result);
-                    
-                    // Validate data structure
-                    if (!data.version || !data.gridConfig) {
-                        throw new Error('Invalid file format');
-                    }
-
-                    AppState.gridConfig = data.gridConfig || AppState.gridConfig;
-                    AppState.hexes = data.hexes || {};
-                    if (data.overlay?.image) {
-                        AppState.overlay = { ...data.overlay };
-                        document.getElementById('overlayImage').src = data.overlay.image;
-                        document.getElementById('overlayImage').style.display = 'block';
-                        document.getElementById('overlayControls').classList.remove('hidden');
-                        updateOverlayPosition();
-                    }
-                    AppState.hasUnsavedChanges = false;
-                    updateGridInputs();
-                    render();
-                    showToast('Design imported successfully');
-                } catch (error) {
-                    console.error('Import error:', error);
-                    showToast('Error importing file: ' + error.message);
-                }
-            };
-            reader.onerror = () => {
-                showToast('Error reading file');
-            };
-            reader.readAsText(file);
-            
-            // Reset file input
-            e.target.value = '';
-        });
-
-        // ============================================
-        // INITIAL RENDER
-        // ============================================
-        render();
-    </script>
-</body>
-</html>
