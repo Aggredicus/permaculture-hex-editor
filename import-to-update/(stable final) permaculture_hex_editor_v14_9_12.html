@@ -1,0 +1,3263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Permaculture Hex Grid Map Editor v14.9.12 (Plants + Structures + Paths + Water)</title>
+  <style>
+    :root {
+      --bg: #0f1216;
+      --panel: #151a21;
+      --panel2: #10151c;
+      --text: #e7edf5;
+      --muted: #a9b4c2;
+      --stroke: rgba(255,255,255,.10);
+      --stroke2: rgba(255,255,255,.16);
+      --accent: #6ee7ff;
+      --danger: #ff6e6e;
+      --good: #7CFF9A;
+      --warn: #ffd36e;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+    * { box-sizing: border-box; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      height: 100%;
+      width: 100%;
+    }
+
+    .stage {
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(1200px 800px at 30% 20%, rgba(110,231,255,.07), transparent 55%),
+                  radial-gradient(1000px 900px at 70% 70%, rgba(124,255,154,.06), transparent 60%),
+                  linear-gradient(180deg, #0e1116, #0b0e12);
+      border-right: 1px solid var(--stroke);
+      touch-action: none;
+    }
+
+    canvas { display: block; width: 100%; height: 100%; }
+
+    .hud {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      padding: 10px;
+      background: rgba(21,26,33,.85);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      flex-wrap: wrap;
+      max-width: calc(100% - 24px);
+      user-select: none;
+    }
+
+    .group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding-right: 10px;
+      border-right: 1px solid var(--stroke);
+    }
+    .group:last-child { border-right: none; padding-right: 0; }
+
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+    input[type="number"], input[type="text"], select, textarea {
+      width: 100%;
+      border: 1px solid var(--stroke2);
+      background: var(--panel2);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 10px;
+      outline: none;
+      font-size: 14px;
+    }
+    textarea { min-height: 76px; resize: vertical; }
+
+    .btn {
+      border: 1px solid var(--stroke2);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      color: var(--text);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 34px;
+    }
+    .btn:hover { border-color: rgba(110,231,255,.35); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { border-color: rgba(110,231,255,.35); box-shadow: 0 0 0 2px rgba(110,231,255,.12) inset; }
+    .btn.danger { border-color: rgba(255,110,110,.35); }
+    .btn.good { border-color: rgba(124,255,154,.35); }
+    .btn.tiny { padding: 6px 8px; border-radius: 10px; min-height: 30px; font-size: 12px; }
+
+    .chiprow { display:flex; gap:6px; flex-wrap: wrap; }
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid var(--stroke2);
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+    .legendRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      background: rgba(0,0,0,.20);
+    }
+    .legendMain {
+      display:flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .legendTop {
+      display:flex;
+      gap: 10px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+    .legendKey {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+    }
+    .legendName {
+      font-size: 12px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 260px;
+    }
+    .legendMeta {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .chip {
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke2);
+      color: var(--muted);
+      background: rgba(0,0,0,.22);
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(21,26,33,.92), rgba(16,21,28,.92));
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .card {
+      background: rgba(10,14,18,.40);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .title {
+      display:flex; align-items:center; justify-content: space-between; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .title h2 { font-size: 14px; margin: 0; letter-spacing: .2px; }
+    .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    .sep { height: 1px; background: var(--stroke); margin: 10px 0; }
+
+    .kvs { display:grid; grid-template-columns: 140px 1fr; gap: 6px 10px; font-size: 13px; }
+    .kvs div:nth-child(odd) { color: var(--muted); }
+    .mono { font-family: var(--mono); }
+
+    .footnote { font-size: 12px; color: var(--muted); line-height: 1.35; }
+
+    .file {
+      display:flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .file input[type="file"] { color: var(--muted); }
+
+    .kbd { font-family: var(--mono); font-size: 12px; padding: 2px 6px; border-radius: 6px;
+      border: 1px solid var(--stroke2); background: rgba(0,0,0,.25); color: var(--muted); }
+
+    .hint { color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .panel { border-top: 1px solid var(--stroke); }
+    }
+  
+    /* MCP / Inspector */
+    .statusDot{width:10px;height:10px;border-radius:999px;display:inline-block;border:1px solid var(--stroke2);}
+    .statusDot.ok{background: rgba(124,255,154,.85);}
+    .statusDot.bad{background: rgba(255,110,110,.85);}
+    .statusDot.mid{background: rgba(255,211,110,.85);}
+    .log{
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(0,0,0,.20);
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 10px;
+      max-height: 180px;
+      overflow: auto;
+      color: rgba(231,237,245,.92);
+    }
+    .smallBtnRow{display:flex; gap:8px; flex-wrap:wrap;}
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="stage" id="stage">
+      <canvas id="c"></canvas>
+
+      <div class="hud">
+        <div class="group">
+          <div style="min-width: 170px;">
+            <label>Tool</label>
+            <select id="tool">
+              <option value="plant">Plant paint (by ID)</option>
+              <option value="structure">Structure paint (by ID)</option>
+              <option value="path">Path paint (by ID)</option>
+              <option value="water">Water paint (by ID)</option>
+              <option value="movebg">Move background image</option>
+              <option value="erase">Erase</option>
+              <option value="select">Select</option>
+              <option value="multiselect">Multi-select</option>
+              <option value="pan">Pan only</option>
+            </select>
+          </div>
+          <div style="width: 120px;">
+            <label>Value / ID</label>
+            <input id="valueId" type="number" min="0" step="1" value="1" />
+          </div>
+          <div style="width: 96px;">
+            <label>Pos (1–6)</label>
+            <input id="slotPos" type="number" min="1" max="6" step="1" value="1" />
+          </div>
+          <div style="width: 120px; display:flex; gap:10px; align-items:flex-end;">
+            <label style="display:flex; align-items:center; gap:8px; margin:0;">
+              <input id="slotAuto" type="checkbox" checked />
+              <span style="font-size:12px; opacity:.9;">Auto</span>
+            </label>
+          </div>
+          <div style="width: 150px; display:flex; gap:10px; align-items:flex-end;">
+            <label style="display:flex; align-items:center; gap:8px; margin:0;">
+              <input id="stackPaint" type="checkbox" />
+              <span style="font-size:12px; opacity:.9;">Multi-slot</span>
+            </label>
+          </div>
+
+          <div style="width: 120px;">
+            <label>Brush radius</label>
+            <input id="brushRadius" type="number" min="0" max="30" step="1" value="0" />
+          </div>
+
+          <div style="width: 150px;">
+            <label style="margin-bottom:6px;">ID labels</label>
+            <label style="display:flex; align-items:center; gap:8px; margin:0;">
+              <input id="toggleIds" type="checkbox" checked />
+              <span style="font-size:12px; opacity:.9;">Show IDs</span>
+            </label>
+          </div>
+          <div style="width: 120px;">
+            <label>Font size</label>
+            <input id="idFontSize" type="number" min="6" max="72" step="1" value="13" />
+          </div>
+
+
+        </div>
+
+        <div class="group">
+          <div style="width: 120px;">
+            <label>Hex size</label>
+            <input id="hexSize" type="number" min="8" max="90" step="1" value="28" />
+          </div>
+          <div style="width: 140px;">
+            <label>Grid radius</label>
+            <input id="gridRadius" type="number" min="1" max="200" step="1" value="18" />
+          </div>
+          <div style="width: 140px;">
+            <label>Orientation</label>
+            <select id="orientation">
+              <option value="pointy" selected>Pointy top</option>
+              <option value="flat">Flat top</option>
+            </select>
+          </div>
+          <div class="chiprow" style="align-self:flex-end; padding-bottom: 2px;">
+            <span class="chip" id="chipZoom">zoom 100%</span>
+            <span class="chip" id="chipCount">tiles 0</span>
+            <span class="chip" id="chipSel">sel 0</span>
+          </div>
+        </div>
+
+        <div class="group">
+          <button class="btn tiny primary" id="fit">Fit</button>
+          <button class="btn tiny" id="center">Center</button>
+          <button class="btn tiny" id="copyBtn">Copy</button>
+          <button class="btn tiny" id="pasteBtn">Paste</button>
+          <button class="btn tiny" id="undoBtn">Undo</button>
+          <button class="btn tiny" id="redoBtn">Redo</button>
+          <button class="btn tiny danger" id="clear">Clear map</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div class="card" id="versionManagerPanel">
+        <div class="title">
+          <div>
+            <h2>HexGrid Map Editor</h2>
+            <div class="sub">Version Manager</div>
+          </div>
+        </div>
+
+        <div class="kvs">
+          <div>Version</div><div class="mono" id="appVersionDisplay">v14.9.12</div>
+          <div>License</div><div class="mono">© Copyleft 2026</div>
+          <div>Author</div><div>Dillon Lee</div>
+          <div>Co-author</div><div>ChatGPT — Model: GPT 5.4 Thinking</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">
+          <div>
+            <h2>Selection</h2>
+            <div class="sub">Click/tap to select. Use the Select or Multi-select tools.</div>
+          </div>
+          <button class="btn tiny danger" id="clearSel">Clear selection</button>
+        </div>
+
+        <div class="kvs">
+          <div>Selected count</div><div class="mono" id="selCount">0</div>
+          <div>Last hex (q,r,s)</div><div class="mono" id="selAxial">—</div>
+          <div>Type</div><div class="mono" id="selType">—</div>
+          <div>Value / ID</div><div class="mono" id="selValue">—</div>
+          <div>Name</div><div id="selName">—</div>
+          <div>Color</div><div class="mono" id="selColor">—</div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <div>
+            <label>Apply Type to selection</label>
+            <select id="applyType">
+              <option value="plant">Plant</option>
+              <option value="structure">Structure</option>
+              <option value="path">Path</option>
+              <option value="water">Water</option>
+            </select>
+          </div>
+          <div>
+            <label>Apply Value / ID</label>
+            <input id="applyValue" type="number" min="0" step="1" placeholder="e.g., 17" />
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn good" id="applyToSel" style="flex:1;">Apply to selection</button>
+          <button class="btn danger" id="eraseSel">Erase selection</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <div style="margin-top:8px;">
+          <label>Notes (applies to last selected hex only)</label>
+          <textarea id="selNotes" placeholder="Microclimate, spacing, maintenance, etc."></textarea>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn" id="saveNotes" style="flex:1;">Save notes</button>
+            <button class="btn" id="clearNotes">Clear notes</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="footnote">
+          Copy/paste includes tile type, value, notes, and per-tile color overrides.
+          Paste uses the hex under your cursor (or last selected hex) as the anchor.
+        </div>
+      </div>
+
+
+      <div class="card" id="legendCard">
+        <div class="title">
+          <div>
+            <h2>Legend</h2>
+            <div class="sub">Auto-built from what’s currently used on the map.</div>
+          </div>
+          <button class="btn tiny" id="legendRefresh">Refresh</button>
+        </div>
+
+        <div class="kvs">
+          <div>Legend entries</div><div class="mono" id="legendCount">0</div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div id="legendList" style="display:flex; flex-direction:column; gap:8px;"></div>
+
+        <div class="sep"></div>
+        <div class="footnote">
+          Shows each used <span class="kbd">type:id</span> plus name (plants from CSV), and color (per-type default or per-plant color).
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">
+          <div>
+            <h2>Colors</h2>
+            <div class="sub">Defaults for Structures/Paths/Water. Plants use CSV color if provided.</div>
+          </div>
+        </div>
+
+        <div class="row3">
+          <div>
+            <label>Structure color</label>
+            <input id="colStructure" type="text" value="#b48cff" />
+          </div>
+          <div>
+            <label>Path color</label>
+            <input id="colPath" type="text" value="#ffd36e" />
+          </div>
+          <div>
+            <label>Water color</label>
+            <input id="colWater" type="text" value="#6ee7ff" />
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn" id="applyColors" style="flex:1;">Apply</button>
+          <button class="btn" id="resetColors">Reset</button>
+        </div>
+
+        <div class="sep"></div>
+        <div class="row">
+          <div>
+            <label>Override color for selection</label>
+            <input id="overrideColor" type="text" placeholder="#RRGGBB or empty to clear" />
+          </div>
+          <div style="display:flex; gap:8px; align-items:end;">
+            <button class="btn" id="applyOverride" style="flex:1;">Set override</button>
+            <button class="btn" id="clearOverride">Clear</button>
+          </div>
+        </div>
+        <div class="hint">Plant CSV 3rd column or “color” header: <span class="kbd">12,Apple,#5bcf6a</span></div>
+      </div>
+
+      <div class="card">
+        <div class="title">
+          <div>
+            <h2>Plant Dictionary (CSV)</h2>
+            <div class="sub">Supports 3rd column as <span class="kbd">color</span> (hex code) for each plant ID.</div>
+          </div>
+        </div>
+
+        <div class="file">
+          <input id="dictFile" type="file" accept=".csv,text/csv" />
+          <button class="btn" id="exportDict">Export dict CSV</button>
+          <button class="btn" id="clearDict">Clear dict</button>
+        </div>
+
+        <div class="sep"></div>
+        <div class="kvs">
+          <div>Loaded</div><div class="mono" id="dictStatus">no</div>
+          <div>Entries</div><div class="mono" id="dictCount">0</div>
+        </div>
+
+        <div class="sep"></div>
+        <div class="footnote">
+          Accepted columns (flexible): <span class="kbd">id</span>, <span class="kbd">name</span>, <span class="kbd">color</span>.
+          If no headers, assumes col1=id, col2=name, col3=color.
+        </div>
+      </div>
+      <div class="card">
+        <div class="title">
+          <div>
+            <h2>Background Map</h2>
+            <div class="sub">Import and position a base image. Use <span class="kbd">Move background image</span> tool to drag.</div>
+          </div>
+        </div>
+
+        <div class="file">
+          <input id="bgFile" type="file" accept="image/*" />
+          <button class="btn tiny" id="bgReset">Reset position</button>
+          <button class="btn tiny danger" id="bgClear">Clear</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <div>
+          <label>Background opacity</label>
+          <input id="bgOpacity" type="range" min="0" max="1" step="0.01" value="0.60"/>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label>Grid line opacity</label>
+          <input id="gridOpacity" type="range" min="0" max="1" step="0.01" value="1.00"/>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label>Hex fill opacity</label>
+          <input id="fillOpacity" type="range" min="0" max="1" step="0.01" value="1.00"/>
+        </div>
+
+        <div class="sep"></div>
+
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <label style="margin:0; display:flex; gap:8px; align-items:center;">
+            <input id="bgLock" type="checkbox" />
+            <span class="hint">Lock background</span>
+          </label>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <div>
+            <label>Background scale</label>
+            <input id="bgScale" type="range" min="0.1" max="4" step="0.01" value="1.00"/>
+          </div>
+          <div>
+            <label>Scale step (wheel)</label>
+            <input id="bgScaleStep" type="number" min="0.01" max="1" step="0.01" value="0.10"/>
+          </div>
+        </div>
+
+        <div class="footnote">
+          Tip: while in <span class="kbd">Move background image</span> tool, use the mouse wheel / trackpad scroll to scale the image around your cursor.
+        </div>
+      </div>
+
+
+
+      <div class="card">
+        <div class="title">
+          <div>
+            <h2>Import / Export Map</h2>
+            <div class="sub">JSON includes
+      <div class="card" id="mcpCard">
+        <div class="title">
+          <div>
+            <h2>AI / MCP</h2>
+            <div class="sub">Natural-language commands + live inspector resources. (Works offline; optional MCP WebSocket bridge.)</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="statusDot mid" id="mcpDot" title="Disconnected"></span>
+            <span class="mono" id="mcpStatus" style="font-size:12px; color:var(--muted);">offline</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>MCP WebSocket URL (optional)</label>
+            <input id="mcpUrl" type="text" value="ws://localhost:8765" />
+          </div>
+          <div style="display:flex; gap:8px; align-items:end;">
+            <button class="btn tiny" id="mcpConnect" style="flex:1;">Connect</button>
+            <button class="btn tiny danger" id="mcpDisconnect">Disconnect</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div>
+          <label>Command</label>
+          <textarea id="mcpCommand" placeholder="Examples:
+paint plant 12 radius 2 at 0,0
+paint path 1 radius 0 at -3,5
+erase radius 1 at 4,-2
+select at 2,-1
+toggle at 2,-1
+(Or paste a JSON tool call like: {&quot;tool&quot;:&quot;paint_hexes&quot;,&quot;args&quot;:{...}})"></textarea>
+          <div class="smallBtnRow" style="margin-top:8px;">
+            <button class="btn primary" id="mcpRun" style="flex:1;">Run</button>
+            <button class="btn" id="mcpExplain">Show available tools/resources</button>
+            <button class="btn" id="mcpCopySelJson">Copy selection JSON</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <div>
+            <label>Inspector (hover)</label>
+            <div class="log" id="inspectorHover">—</div>
+          </div>
+          <div>
+            <label>Inspector (selection)</label>
+            <div class="log" id="inspectorSel">—</div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <label>AI / MCP log</label>
+        <div class="log" id="mcpLog">Ready.</div>
+
+        <div class="sep"></div>
+        <div class="footnote">
+          The editor exposes a small MCP-like surface:
+          <span class="kbd">tools/call</span> for map edits and
+          <span class="kbd">resources/read</span> for live state (selection, hover, legend, hex data).
+          If you connect a bridge server, it can call these tools/resources over WebSocket.
+        </div>
+      </div>
+ all painted tiles + notes + defaults.</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn primary" id="export">Export JSON</button>
+          <input id="importFile" type="file" accept=".json,application/json" />
+          <button class="btn" id="importBtn">Import JSON</button>
+        </div>
+
+        <div class="sep"></div>
+        <div class="footnote">
+          Shortcuts: <span class="kbd">C</span> copy selection, <span class="kbd">V</span> paste, <span class="kbd">Z</span> undo, <span class="kbd">Y</span> redo, <span class="kbd">Esc</span> clear selection, <span class="kbd">Shift</span> drag pan.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">
+          <div>
+            <h2>Export Image</h2>
+            <div class="sub">Export the current view as a full-resolution PNG.</div>
+          </div>
+        </div>
+
+        <button class="btn" id="exportPng">Export as PNG</button>
+          <button class="btn" id="exportFullPng" title="Export using the full background image bounds">Export Full Image</button>
+
+        <div class="footnote">
+          Note: this exports exactly what you see (background, fills, grid, overlays) at device-pixel resolution.
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+<script>
+(() => {
+  const APP_VERSION = "v14.9.12";
+  const SQRT3 = Math.sqrt(3);
+  const ORIENT_POINTY = { f0: SQRT3, f1: SQRT3/2, f2: 0.0, f3: 3/2, b0: SQRT3/3, b1: -1/3, b2: 0.0, b3: 2/3, start_angle: 0.5 };
+  const ORIENT_FLAT   = { f0: 3/2,  f1: 0.0,      f2: SQRT3/2, f3: SQRT3, b0: 2/3,     b1: 0.0,  b2: -1/3, b3: SQRT3/3, start_angle: 0.0 };
+
+  function cube(q, r, s) { return {q, r, s}; }
+  function axial(q, r) { return {q, r}; }
+  function axialToCube(h) { return cube(h.q, h.r, -h.q - h.r); }
+  function cubeToAxial(c) { return axial(c.q, c.r); }
+  function cubeAdd(a, b) { return cube(a.q+b.q, a.r+b.r, a.s+b.s); }
+  function cubeSub(a, b) { return cube(a.q-b.q, a.r-b.r, a.s-b.s); }
+
+  function cubeRound(frac) {
+    let q = Math.round(frac.q), r = Math.round(frac.r), s = Math.round(frac.s);
+    const qd = Math.abs(q - frac.q), rd = Math.abs(r - frac.r), sd = Math.abs(s - frac.s);
+    if (qd > rd && qd > sd) q = -r - s;
+    else if (rd > sd) r = -q - s;
+    else s = -q - r;
+    return cube(q,r,s);
+  }
+
+  function hexToPixel(layout, h) {
+    const M = layout.orientation;
+    const x = (M.f0 * h.q + M.f1 * h.r) * layout.size.x;
+    const y = (M.f2 * h.q + M.f3 * h.r) * layout.size.y;
+    return { x: x + layout.origin.x, y: y + layout.origin.y };
+  }
+
+  function pixelToHexFractional(layout, p) {
+    const M = layout.orientation;
+    const pt = { x: (p.x - layout.origin.x) / layout.size.x, y: (p.y - layout.origin.y) / layout.size.y };
+    const q = M.b0 * pt.x + M.b1 * pt.y;
+    const r = M.b2 * pt.x + M.b3 * pt.y;
+    return { q, r, s: -q - r };
+  }
+
+  function pixelToHex(layout, p) { return cubeToAxial(cubeRound(pixelToHexFractional(layout, p))); }
+
+  function hexCornerOffset(layout, corner) {
+    const angle = 2.0 * Math.PI * (layout.orientation.start_angle + corner) / 6;
+    return { x: layout.size.x * Math.cos(angle), y: layout.size.y * Math.sin(angle) };
+  }
+
+  function polygonCorners(layout, h) {
+    const center = hexToPixel(layout, h);
+    const corners = [];
+    for (let i=0;i<6;i++){ const off = hexCornerOffset(layout, i); corners.push({ x: center.x + off.x, y: center.y + off.y }); }
+    return corners;
+  }
+
+  function hexDistance(aAx, bAx) {
+    const a = axialToCube(aAx), b = axialToCube(bAx);
+    const d = cubeSub(a,b);
+    return (Math.abs(d.q) + Math.abs(d.r) + Math.abs(d.s)) / 2;
+  }
+
+  function axialRange(center, radius) {
+    const results = [];
+    const c = axialToCube(center);
+    for (let dq = -radius; dq <= radius; dq++) {
+      for (let dr = Math.max(-radius, -dq-radius); dr <= Math.min(radius, -dq+radius); dr++) {
+        const ds = -dq - dr;
+        results.push(cubeToAxial(cubeAdd(c, cube(dq, dr, ds))));
+      }
+    }
+    return results;
+  }
+
+  function generateHexagon(radius) {
+    const results = [];
+    for (let q=-radius; q<=radius; q++) {
+      const r1 = Math.max(-radius, -q-radius);
+      const r2 = Math.min(radius, -q+radius);
+      for (let r=r1; r<=r2; r++) results.push(axial(q,r));
+    }
+    return results;
+  }
+
+  const canvas = document.getElementById('c');
+  const stage = document.getElementById('stage');
+  const hudEl = document.querySelector('.hud');
+  const ctx = canvas.getContext('2d');
+
+  const toolEl = document.getElementById('tool');
+  const valueIdEl = document.getElementById('valueId');
+  const slotPosEl = document.getElementById('slotPos');
+  const slotAutoEl = document.getElementById('slotAuto');
+  const stackPaintEl = document.getElementById('stackPaint');
+  const brushRadiusEl = document.getElementById('brushRadius');
+  const hexSizeEl = document.getElementById('hexSize');
+  const gridRadiusEl = document.getElementById('gridRadius');
+  const orientationEl = document.getElementById('orientation');
+
+  const chipZoom = document.getElementById('chipZoom');
+  const chipCount = document.getElementById('chipCount');
+  const chipSel = document.getElementById('chipSel');
+
+  const fitBtn = document.getElementById('fit');
+  const centerBtn = document.getElementById('center');
+  const clearBtn = document.getElementById('clear');
+  const copyBtn = document.getElementById('copyBtn');
+  const pasteBtn = document.getElementById('pasteBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+
+  const selCountEl = document.getElementById('selCount');
+  const selAxialEl = document.getElementById('selAxial');
+  const selTypeEl = document.getElementById('selType');
+  const selValueEl = document.getElementById('selValue');
+  const selNameEl = document.getElementById('selName');
+  const selColorEl = document.getElementById('selColor');
+  const clearSelBtn = document.getElementById('clearSel');
+
+  const applyTypeEl = document.getElementById('applyType');
+  const applyValueEl = document.getElementById('applyValue');
+  const applyToSelBtn = document.getElementById('applyToSel');
+  const eraseSelBtn = document.getElementById('eraseSel');
+
+  const selNotesEl = document.getElementById('selNotes');
+  const saveNotesBtn = document.getElementById('saveNotes');
+  const clearNotesBtn = document.getElementById('clearNotes');
+
+  const colStructureEl = document.getElementById('colStructure');
+  const colPathEl = document.getElementById('colPath');
+  const colWaterEl = document.getElementById('colWater');
+  const applyColorsBtn = document.getElementById('applyColors');
+  const resetColorsBtn = document.getElementById('resetColors');
+
+  const overrideColorEl = document.getElementById('overrideColor');
+  const applyOverrideBtn = document.getElementById('applyOverride');
+  const clearOverrideBtn = document.getElementById('clearOverride');
+
+  const dictFileEl = document.getElementById('dictFile');
+  const exportDictBtn = document.getElementById('exportDict');
+  const clearDictBtn = document.getElementById('clearDict');
+  const dictStatusEl = document.getElementById('dictStatus');
+  const legendRefreshBtn = document.getElementById('legendRefresh');
+  const legendCountEl = document.getElementById('legendCount');
+  const legendListEl = document.getElementById('legendList');
+
+  const dictCountEl = document.getElementById('dictCount');
+
+  const exportBtn = document.getElementById('export');
+  const exportPngBtn = document.getElementById('exportPng');
+  const exportFullPngBtn = document.getElementById('exportFullPng');
+  const exportImgBtn = document.getElementById('exportImg');
+  const importFileEl = document.getElementById('importFile');
+  const importBtn = document.getElementById('importBtn');
+
+  const bgFileEl = document.getElementById('bgFile');
+  const bgResetBtn = document.getElementById('bgReset');
+  const bgClearBtn = document.getElementById('bgClear');
+  const bgOpacityEl = document.getElementById('bgOpacity');
+  const gridOpacityEl = document.getElementById('gridOpacity');
+  const fillOpacityEl = document.getElementById('fillOpacity');
+  
+  // ID label display controls (v14.9.6)
+  const toggleIdsEl = document.getElementById('toggleIds');
+  const idFontSizeEl = document.getElementById('idFontSize');
+const bgLockEl = document.getElementById('bgLock');
+  const bgScaleEl = document.getElementById('bgScale');
+  const bgScaleStepEl = document.getElementById('bgScaleStep');
+
+  let orientationMode = 'pointy';
+  let layout = { orientation: ORIENT_POINTY, size: { x: Number(hexSizeEl.value), y: Number(hexSizeEl.value) }, origin: { x: 0, y: 0 } };
+  let cam = { panX: 0, panY: 0, zoom: 1.0 };
+
+  // Background image layer (base map)
+  let bgImage = null;               // HTMLImageElement
+  let bgDataUrl = null;             // persisted as data URL for export/import/undo
+  let bgTransform = { x: 0, y: 0, scale: 1 }; // world-space transform (inside camera)
+  let bgOpacity = 0.60;
+  let gridOpacity = 1.00;
+  let fillOpacity = 1.00; // multiplies default fill alpha
+  let showIds = true;
+  let idFontPx = 13; // base label size in screen pixels
+
+  let bgLocked = false;
+
+  let movingBg = false;
+  let bgDragStart = null;
+  let bgTransformStart = null;
+
+  // Alt-drag painting (paint multiple hexes in one stroke)
+  let altStrokeActive = false;
+  let altStrokeKeys = new Set();
+  let altStrokeChanged = false;
+
+  let gridRadius = Number(gridRadiusEl.value);
+  let grid = generateHexagon(gridRadius);
+
+  const tiles = new Map(); // key -> {type,value,notes,colorOverride}
+  const tileDict = new Map(); // key `${type}:${id}` -> {type,id,name,color}
+  const plantDict = new Map(); // legacy convenience for plants only (id -> {id,name,color})
+  let dictLoaded = false;
+
+  const selectedKeys = new Set();
+  let lastSelected = null;
+  let internalClipboard = null;
+  let hoverHex = null;
+
+  let typeColors = { structure: colStructureEl.value.trim(), path: colPathEl.value.trim(), water: colWaterEl.value.trim() };
+
+  // Initialize ID label controls (v14.9.6)
+  if (toggleIdsEl) toggleIdsEl.checked = showIds;
+  if (idFontSizeEl) idFontSizeEl.value = String(idFontPx);
+
+
+  // Undo / Redo
+  const HISTORY_LIMIT = 500;
+  let history = [];
+  let historyIndex = -1;
+
+  function captureState() {
+    return {
+      gridRadius,
+      hexSize: Number(hexSizeEl.value),
+      orientation: orientationMode,
+      typeColors: { ...typeColors },
+      bg: {
+        dataUrl: bgDataUrl,
+        transform: { ...bgTransform },
+        opacity: bgOpacity,
+        locked: bgLocked,
+      },
+      ui: {
+        gridOpacity,
+        fillOpacity,
+        showIds,
+        idFontPx,
+        bgScaleStep: Number(bgScaleStepEl?.value || 0.10),
+      },
+      tiles: Array.from(tiles.entries()).map(([k,v]) => [k, { ...v }]),
+    };
+  }
+
+  function applyState(state) {
+    if (!state) return;
+    // grid radius
+    gridRadius = clamp(Math.trunc(Number(state.gridRadius)), 1, 200);
+    gridRadiusEl.value = String(gridRadius);
+    grid = generateHexagon(gridRadius);
+
+    // hex size
+    const hs = clamp(Math.trunc(Number(state.hexSize)), 8, 90);
+    hexSizeEl.value = String(hs);
+
+    // orientation
+    orientationMode = (state.orientation === 'flat') ? 'flat' : 'pointy';
+    if (orientationEl) orientationEl.value = orientationMode;
+    layout.orientation = (orientationMode === 'flat') ? ORIENT_FLAT : ORIENT_POINTY;
+
+    // type colors
+    if (state.typeColors) {
+      typeColors = { ...typeColors, ...state.typeColors };
+      colStructureEl.value = typeColors.structure;
+      colPathEl.value = typeColors.path;
+      colWaterEl.value = typeColors.water;
+    }
+
+    // background
+    if (state.bg) {
+      bgDataUrl = state.bg.dataUrl || null;
+      bgOpacity = clamp(Number(state.bg.opacity ?? bgOpacity), 0, 1);
+      if (bgOpacityEl) bgOpacityEl.value = String(bgOpacity);
+      bgLocked = !!state.bg.locked;
+      if (bgLockEl) bgLockEl.checked = bgLocked;
+
+      const tr = state.bg.transform || {};
+      bgTransform = {
+        x: Number(tr.x ?? bgTransform.x) || 0,
+        y: Number(tr.y ?? bgTransform.y) || 0,
+        scale: clamp(Number(tr.scale ?? bgTransform.scale) || 1, 0.1, 10)
+      };
+      if (bgScaleEl) bgScaleEl.value = String(bgTransform.scale);
+
+      if (bgDataUrl) {
+        const img = new Image();
+        img.onload = () => { bgImage = img; draw(); };
+        img.src = bgDataUrl;
+      } else {
+        bgImage = null;
+      }
+    }
+
+    // UI bits
+    if (state.ui) {
+      gridOpacity = clamp(Number(state.ui.gridOpacity ?? gridOpacity), 0, 1);
+      if (gridOpacityEl) gridOpacityEl.value = String(gridOpacity);
+      fillOpacity = clamp(Number(state.ui.fillOpacity ?? fillOpacity), 0, 1);
+      if (fillOpacityEl) fillOpacityEl.value = String(fillOpacity);
+      
+      showIds = (state.ui.showIds !== undefined) ? !!state.ui.showIds : true;
+      idFontPx = (state.ui.idFontPx != null) ? clamp(Number(state.ui.idFontPx), 6, 72) : 13;
+      if (toggleIdsEl) toggleIdsEl.checked = showIds;
+      if (idFontSizeEl) idFontSizeEl.value = String(idFontPx);
+if (bgScaleStepEl && state.ui.bgScaleStep != null) bgScaleStepEl.value = String(clamp(Number(state.ui.bgScaleStep), 0.01, 1));
+    }
+
+    // tiles
+
+    tiles.clear();
+    for (const [k,v] of (state.tiles || [])) {
+      if (!k || !v) continue;
+      const h = parseKey(k);
+      if (hexDistance(axial(0,0), h) > gridRadius) continue;
+      tiles.set(k, {
+        type: v.type,
+        value: (v.value == null ? null : Math.trunc(Number(v.value))),
+        notes: String(v.notes ?? ""),
+        colorOverride: v.colorOverride ? normalizeHexColor(v.colorOverride) : null,
+        slots: Array.isArray(v.slots) ? v.slots.map(s => s && s.type ? { type: String(s.type), value: (s.value==null?null:Math.trunc(Number(s.value))), label: (s.label!=null?String(s.label):null) } : null) : null,
+      });
+    }
+
+    // Selection doesn't survive time travel; it's less confusing.
+    clearSelection();
+    draw();
+  }
+
+  function pushHistory() {
+    const snap = captureState();
+    // If we're not at the end, drop the future timeline.
+    if (historyIndex < history.length - 1) history = history.slice(0, historyIndex + 1);
+    history.push(snap);
+    if (history.length > HISTORY_LIMIT) history.shift();
+    historyIndex = history.length - 1;
+    updateUndoRedoUI();
+  }
+
+  function undo() {
+    if (historyIndex <= 0) return;
+    historyIndex--;
+    applyState(history[historyIndex]);
+    updateUndoRedoUI();
+  }
+
+  function redo() {
+    if (historyIndex >= history.length - 1) return;
+    historyIndex++;
+    applyState(history[historyIndex]);
+    updateUndoRedoUI();
+  }
+
+  function updateUndoRedoUI() {
+    if (undoBtn) undoBtn.disabled = (historyIndex <= 0);
+    if (redoBtn) redoBtn.disabled = (historyIndex >= history.length - 1);
+    if (undoBtn) undoBtn.style.opacity = undoBtn.disabled ? "0.45" : "1";
+    if (redoBtn) redoBtn.style.opacity = redoBtn.disabled ? "0.45" : "1";
+  }
+
+  function isTypingInUI() {
+    const el = document.activeElement;
+    if (!el) return false;
+    const tag = (el.tagName || "").toUpperCase();
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  }
+
+  // Interaction
+  let isDragging = false;
+  let dragStart = null;
+  let camStart = null;
+  let shiftPan = false;
+  const pointers = new Map();
+  let pinchStart = null;
+
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+  function keyOf(h) { return `${h.q},${h.r}`; }
+  function parseKey(k){ const [q,r]=k.split(',').map(Number); return axial(q,r); }
+
+  function normalizeHexColor(s) {
+    if (!s) return null;
+    const t = String(s).trim();
+    if (!t) return null;
+    const m3 = t.match(/^#([0-9a-fA-F]{3})$/);
+    if (m3) return ("#" + m3[1].split("").map(ch => ch+ch).join("")).toLowerCase();
+    const m6 = t.match(/^#([0-9a-fA-F]{6})$/);
+    if (m6) return ("#" + m6[1]).toLowerCase();
+    return null;
+  }
+
+  function download(filename, text, type='application/json') {
+    const blob = new Blob([text], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 500);
+  }
+
+  function updateChips() {
+    chipZoom.textContent = `zoom ${Math.round(cam.zoom * 100)}%`;
+    chipCount.textContent = `tiles ${grid.length}`;
+    chipSel.textContent = `sel ${selectedKeys.size}`;
+    selCountEl.textContent = String(selectedKeys.size);
+  }
+
+  function resolveTileColor(h, t) {
+    if (!t) return null;
+    if (t.colorOverride) return normalizeHexColor(t.colorOverride);
+
+    const type = String(t.type || '').trim().toLowerCase();
+    const id = (t.value ?? null);
+
+    // Dictionary color override (type-specific)
+    if (type && id != null) {
+      const key = `${type}:${id}`;
+      const dc = tileDict.get(key)?.color;
+      if (dc) return dc;
+      // legacy plantDict support (in case only plant dict loaded)
+      if (type === 'plant') {
+        const pc = plantDict.get(Number(id))?.color;
+        if (pc) return pc;
+      }
+    }
+
+    // Fall back to type defaults
+    return normalizeHexColor(typeColors[type]);
+  }
+
+
+
+  // --- Multi-slot rendering (up to 6 sectors per hex) ---
+  function getTileSlots(t) {
+    if (!t) return [];
+    if (Array.isArray(t.slots)) return t.slots;
+    if (t.type) return [{ type: t.type, value: t.value ?? null, label: null }];
+    return [];
+  }
+
+  function resolveSlotColor(slot) {
+    if (!slot || !slot.type) return null;
+    // Allow per-slot label-based colors later; for now, reuse tile color logic.
+    const t = { type: slot.type, value: slot.value ?? null, colorOverride: null };
+    let c = resolveTileColor(null, t);
+    if (slot.type === 'plant' && (!c) && slot.value) {
+      const [r,g,b] = hashColorInt(slot.value);
+      c = `#${[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('')}`;
+    }
+    return c;
+  }
+
+  function cornersForSectors(corners) {
+    // Return corners ordered clockwise, starting at the corner nearest true "north".
+    // This avoids per-hex jitter from min-y heuristics (floating point ties).
+    if (!corners || corners.length !== 6) return corners;
+
+    const cx = (corners[0].x + corners[1].x + corners[2].x + corners[3].x + corners[4].x + corners[5].x) / 6;
+    const cy = (corners[0].y + corners[1].y + corners[2].y + corners[3].y + corners[4].y + corners[5].y) / 6;
+
+    const pts = corners.map(p => ({ p, ang: Math.atan2(p.y - cy, p.x - cx) }));
+    // Sort clockwise: decreasing angle.
+    pts.sort((a, b) => b.ang - a.ang);
+
+    const target = -Math.PI / 2;
+    const angDist = (a, t) => {
+      let d = Math.abs(a - t);
+      while (d > Math.PI) d = Math.abs(d - 2 * Math.PI);
+      return d;
+    };
+
+    let idx0 = 0;
+    let best = 1e9;
+    for (let i = 0; i < pts.length; i++) {
+      const d = angDist(pts[i].ang, target);
+      if (d < best) { best = d; idx0 = i; }
+    }
+
+    const rotated = [];
+    for (let k = 0; k < 6; k++) rotated.push(pts[(idx0 + k) % 6].p);
+    return rotated;
+  }
+
+  function drawSector(center, a, b) {
+    ctx.beginPath();
+    ctx.moveTo(center.x, center.y);
+    ctx.lineTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.closePath();
+  }
+
+  function drawMultiSlotFill(corners, t) {
+    const slotsRaw = getTileSlots(t);
+    const active = slotsRaw.filter(s => s && s.type);
+    if (!active.length) return { active: [], sectorToSlot: [] };
+
+    const c = corners.reduce((acc,p)=>({x:acc.x+p.x/6,y:acc.y+p.y/6}), {x:0,y:0});
+    const secCorners = cornersForSectors(corners);
+
+    // sectorToSlot[i] = index into active[] or -1 for transparent
+    const sectorToSlot = new Array(6).fill(-1);
+
+    if (active.length === 1) {
+      // full fill handled elsewhere; still map all sectors to slot 0 for label placement if desired
+      for (let i=0;i<6;i++) sectorToSlot[i]=0;
+    } else if (active.length === 2) {
+      // top half (3 sectors) = slot 1, bottom half = slot 2
+      for (let i=0;i<3;i++) sectorToSlot[i]=0;
+      for (let i=3;i<6;i++) sectorToSlot[i]=1;
+    } else if (active.length === 3) {
+      // thirds: 2 sectors each
+      sectorToSlot[0]=0; sectorToSlot[1]=0;
+      sectorToSlot[2]=1; sectorToSlot[3]=1;
+      sectorToSlot[4]=2; sectorToSlot[5]=2;
+    } else {
+      // 4-6: one sector per position, leftover sectors transparent
+      for (let i=0;i<6;i++) sectorToSlot[i] = (i < active.length) ? i : -1;
+    }
+
+    // Draw sectors
+    for (let i=0;i<6;i++) {
+      const si = sectorToSlot[i];
+      if (si < 0) continue;
+      const col = resolveSlotColor(active[si]);
+      if (!col) continue;
+      ctx.fillStyle = hexToRgba(col, fillOpacity);
+      drawSector(c, secCorners[i], secCorners[(i+1)%6]);
+      ctx.fill();
+    }
+
+    return { active, sectorToSlot, center: c, secCorners };
+  }
+
+  function drawMultiSlotLabels(fillInfo) {
+    if (!showIds) return;
+const { active, sectorToSlot, center, secCorners } = fillInfo;
+    if (!active || !active.length) return;
+
+    // Keep text readable in screen space across zoom levels.
+    const desiredPx = (idFontPx || 13);
+    const fontWorld = desiredPx / cam.zoom;
+    ctx.font = `600 ${fontWorld}px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+
+    // If mapping merges sectors (n=2 or 3), only label each "position" once.
+    const seen = new Set();
+    for (let i=0;i<6;i++) {
+      const si = sectorToSlot[i];
+      if (si < 0) continue;
+      const key = `${si}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const slot = active[si];
+      const label = (slot.label != null && String(slot.label).length) ? String(slot.label) :
+                    (slot.value != null ? String(slot.value) : "");
+      if (!label) continue;
+
+      // place text at centroid of the first sector that represents it
+      const a = secCorners[i], b = secCorners[(i+1)%6];
+      const tx = (center.x + a.x + b.x) / 3;
+      const ty = (center.y + a.y + b.y) / 3;
+
+      // Small stroke for contrast
+      ctx.save();
+      ctx.lineWidth = 3 / cam.zoom;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.strokeText(label, tx, ty);
+      ctx.fillText(label, tx, ty);
+      ctx.restore();
+    }
+  }
+
+  function hashColorInt(n) {
+    const x = (Math.sin(n * 999) * 10000) % 1;
+    const y = (Math.sin(n * 1337) * 10000) % 1;
+    const z = (Math.sin(n * 1777) * 10000) % 1;
+    const r = 80 + Math.floor(Math.abs(x) * 160);
+    const g = 80 + Math.floor(Math.abs(y) * 160);
+    const b = 80 + Math.floor(Math.abs(z) * 160);
+    return [r,g,b];
+  }
+
+  function hexToRgba(hex, a) {
+    const n = normalizeHexColor(hex);
+    if (!n) return `rgba(255,255,255,${a})`;
+    const r = parseInt(n.slice(1,3),16), g = parseInt(n.slice(3,5),16), b = parseInt(n.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function summarizeSlot(slot) {
+    if (!slot || !slot.type) return null;
+    const type = String(slot.type);
+    const value = (slot.value != null) ? Math.trunc(Number(slot.value)) : null;
+    const label = (slot.label != null && String(slot.label).trim()) ? String(slot.label).trim() : null;
+    let name = '—';
+    if (value && value > 0) {
+      name = (tileDict.get(`${type}:${value}`)?.name)
+        || (type === 'plant' ? (plantDict.get(value)?.name) : null)
+        || `${type}:${value}`;
+    } else if (label) {
+      name = label;
+    } else {
+      name = type;
+    }
+    return { type, value, label, name };
+  }
+
+  function updateSelectionPanel() {
+    updateChips();
+    if (!lastSelected) {
+      selAxialEl.textContent = '—';
+      selTypeEl.textContent = '—';
+      selValueEl.textContent = '—';
+      selNameEl.textContent = '—';
+      selColorEl.textContent = '—';
+      selNotesEl.value = '';
+      return;
+    }
+    const s = -lastSelected.q - lastSelected.r;
+    selAxialEl.textContent = `(${lastSelected.q}, ${lastSelected.r}, ${s})`;
+    const t = tiles.get(keyOf(lastSelected));
+    const type = t?.type ?? '—';
+    const value = t?.value ?? null;
+    const slotSummaries = Array.isArray(t?.slots)
+      ? t.slots.map(s => summarizeSlot(s)).filter(Boolean)
+      : [];
+    selTypeEl.textContent = type;
+    if (slotSummaries.length) {
+      selValueEl.textContent = slotSummaries.map((s, i) => `${i + 1}:${s.value && s.value > 0 ? s.value : (s.label || s.type)}`).join(' | ');
+      selNameEl.textContent = slotSummaries.map((s, i) => `${i + 1}:${s.name}`).join(' | ');
+      const firstSlotColor = resolveSlotColor(t.slots.find(s => s && s.type));
+      selColorEl.textContent = firstSlotColor ?? resolveTileColor(lastSelected, t) ?? '—';
+    } else {
+      selValueEl.textContent = (value && value > 0) ? String(value) : '—';
+      selNameEl.textContent = (value && value > 0) ? ((tileDict.get(`${type}:${value}`)?.name) || (type==='plant' ? (plantDict.get(value)?.name) : null) || '—') : '—';
+      selColorEl.textContent = resolveTileColor(lastSelected, t) ?? '—';
+    }
+    selNotesEl.value = t?.notes ?? '';
+  }
+  // Legend
+  function computeLegendEntries() {
+    const map = new Map(); // key -> {type, id, name, color, count}
+    for (const [k, t] of tiles.entries()) {
+      if (!t) continue;
+      const slotList = (Array.isArray(t.slots) && t.slots.some(s=>s&&s.type)) ? t.slots : null;
+      const entriesToCount = slotList ? slotList.filter(s=>s&&s.type) : [{ type: t.type, value: t.value }];
+      for (const slot of entriesToCount) {
+        if (!slot || !slot.type) continue;
+        const type = String(slot.type);
+        const id = (slot.value && slot.value > 0) ? slot.value : 0;
+
+        let name = "";
+      const dictEntry = (id > 0) ? tileDict.get(`${type}:${id}`) : null;
+
+      if (type === 'plant') {
+        if (id > 0) name = (dictEntry?.name) || (plantDict.get(id)?.name) || `${type} ${id}`;
+        else name = "Plant (unlabeled)";
+      } else if (type === 'structure') {
+        name = (dictEntry?.name) || (id > 0 ? `Structure ${id}` : "Structure");
+      } else if (type === 'path') {
+        name = (dictEntry?.name) || (id > 0 ? `Path ${id}` : "Path");
+      } else if (type === 'water') {
+        name = (dictEntry?.name) || (id > 0 ? `Water ${id}` : "Water");
+      } else {
+        name = (dictEntry?.name) || (id > 0 ? `${type} ${id}` : `${type}`);
+      }
+
+      const tileColor = normalizeHexColor(t.colorOverride);
+      const plantColor = (id > 0) ? ((tileDict.get(`${type}:${id}`)?.color) || (type==='plant' ? (plantDict.get(id)?.color) : null) || null) : null;
+      // If a plant has no CSV color, use the same deterministic fallback used for rendering.
+      const fallbackPlantColor = (type === 'plant' && id > 0 && !plantColor && !tileColor)
+        ? `#${hashColorInt(id).map(x=>x.toString(16).padStart(2,'0')).join('')}`
+        : null;
+      const defaultColor = normalizeHexColor(typeColors[type]) || null;
+      const color = tileColor || plantColor || fallbackPlantColor || defaultColor || null;
+
+      const key = `${type}:${id}`;
+      const prev = map.get(key);
+      if (!prev) map.set(key, { type, id, name, color, count: 1 });
+      else {
+        prev.count += 1;
+        if (!prev.color && color) prev.color = color;
+      }
+      }
+    }
+
+    const entries = Array.from(map.values());
+    const order = { plant: 0, structure: 1, path: 2, water: 3 };
+    entries.sort((a,b) => (order[a.type] - order[b.type]) || (a.id - b.id));
+    return entries;
+  }
+
+  function renderLegend() {
+    if (!legendListEl || !legendCountEl) return;
+    const entries = computeLegendEntries();
+    legendCountEl.textContent = String(entries.length);
+
+    legendListEl.innerHTML = "";
+    if (!entries.length) {
+      const empty = document.createElement('div');
+      empty.className = "hint";
+      empty.textContent = "No painted tiles yet — start placing plants/paths/structures/water.";
+      legendListEl.appendChild(empty);
+      return;
+    }
+
+    for (const e of entries) {
+      const row = document.createElement('div');
+      row.className = "legendRow";
+
+      const sw = document.createElement('span');
+      sw.className = "swatch";
+      sw.style.background = e.color ? e.color : "rgba(255,255,255,0.18)";
+      row.appendChild(sw);
+
+      const main = document.createElement('div');
+      main.className = "legendMain";
+
+      const top = document.createElement('div');
+      top.className = "legendTop";
+
+      const key = document.createElement('div');
+      key.className = "legendKey";
+      key.textContent = `${e.type}:${e.id}`;
+      top.appendChild(key);
+
+      const meta = document.createElement('div');
+      meta.className = "legendMeta";
+      meta.textContent = `×${e.count}`;
+      top.appendChild(meta);
+
+      main.appendChild(top);
+
+      const nm = document.createElement('div');
+      nm.className = "legendName";
+      nm.textContent = e.name + (e.color ? ` • ${e.color}` : "");
+      main.appendChild(nm);
+
+      row.appendChild(main);
+      legendListEl.appendChild(row);
+    }
+  }
+
+  let legendDirty = true;
+  let legendRaf = null;
+  function markLegendDirty() {
+    legendDirty = true;
+    if (legendRaf) return;
+    legendRaf = requestAnimationFrame(() => {
+      legendRaf = null;
+      if (legendDirty) {
+        legendDirty = false;
+        renderLegend();
+      }
+    });
+  }
+
+
+  function clearSelection() {
+    selectedKeys.clear();
+    lastSelected = null;
+    updateSelectionPanel();
+    draw();
+  }
+
+  function toggleSelect(h) {
+    const k = keyOf(h);
+    if (selectedKeys.has(k)) selectedKeys.delete(k);
+    else selectedKeys.add(k);
+    lastSelected = h;
+    updateSelectionPanel();
+    draw();
+  }
+
+  function setSingleSelection(h) {
+    selectedKeys.clear();
+    selectedKeys.add(keyOf(h));
+    lastSelected = h;
+    updateSelectionPanel();
+    draw();
+  }
+
+  function setTile(h, tileOrNull) {
+    const k = keyOf(h);
+    if (!tileOrNull) { tiles.delete(k); return; }
+    const hasValue = tileOrNull.value != null && tileOrNull.value > 0;
+    const hasNotes = !!(tileOrNull.notes && tileOrNull.notes.trim().length);
+    const hasColor = !!normalizeHexColor(tileOrNull.colorOverride);
+    const hasSlots = Array.isArray(tileOrNull.slots) && tileOrNull.slots.some(s => s && s.type);
+    if (!hasValue && !hasNotes && !hasColor && !hasSlots) { tiles.delete(k); return; }
+    tiles.set(k, {
+      type: tileOrNull.type,
+      value: hasValue ? Math.trunc(tileOrNull.value) : null,
+      notes: tileOrNull.notes ?? "",
+      colorOverride: hasColor ? normalizeHexColor(tileOrNull.colorOverride) : null,
+      slots: hasSlots ? tileOrNull.slots.slice(0,6) : null
+    });
+  }
+
+  function paintAtCore(centerHex, opts = { recordHistory: true, redraw: true }) {
+    const tool = toolEl.value;
+    const brush = clamp(Math.trunc(Number(brushRadiusEl.value || 0)), 0, 30);
+    const val = Math.trunc(Number(valueIdEl.value || 0));
+    const targets = axialRange(centerHex, brush);
+
+    let changed = false;
+
+    for (const h of targets) {
+      if (hexDistance(axial(0,0), h) > gridRadius) continue;
+      const k = keyOf(h);
+
+      if (tool === 'erase') {
+        if (tiles.has(k)) { tiles.delete(k); changed = true; }
+        continue;
+      }
+
+      if (tool === 'plant' || tool === 'structure' || tool === 'path' || tool === 'water') {
+        const existing = tiles.get(k) || {};
+        const stack = !!stackPaintEl?.checked;
+
+        if (stack) {
+          const slots = Array.isArray(existing.slots) ? existing.slots.slice(0,6) : Array(6).fill(null);
+          while (slots.length < 6) slots.push(null);
+
+          const auto = !!slotAutoEl?.checked;
+          let idx = clamp(Math.trunc(Number(slotPosEl?.value || 1)) - 1, 0, 5);
+          if (auto) {
+            const firstEmpty = slots.findIndex(s => !s || !s.type);
+            if (firstEmpty >= 0) idx = firstEmpty;
+          }
+
+          if (val > 0) {
+            slots[idx] = { type: tool, value: val, label: null };
+          } else {
+            // Value 0 clears that slot
+            slots[idx] = null;
+          }
+
+          const next = {
+            type: 'multi',
+            value: null,
+            notes: existing.notes ?? "",
+            colorOverride: existing.colorOverride ?? null,
+            slots
+          };
+
+          const prev = tiles.get(k);
+          const prevSlots = Array.isArray(prev?.slots) ? JSON.stringify(prev.slots) : "";
+          const nextSlots = JSON.stringify(next.slots);
+          if (!prev || prev.type !== next.type || prev.notes !== next.notes || prev.colorOverride !== next.colorOverride || prevSlots !== nextSlots) {
+            setTile(h, next);
+            changed = true;
+          }
+        } else {
+          const next = { type: tool, value: (val > 0 ? val : null), notes: existing.notes ?? "", colorOverride: existing.colorOverride ?? null, slots: null };
+          const prev = tiles.get(k);
+          if (!prev || prev.type !== next.type || prev.value !== next.value || prev.notes !== next.notes || prev.colorOverride !== next.colorOverride || (prev.slots && prev.slots.some(x=>x))) {
+            setTile(h, next);
+            changed = true;
+          }
+        }
+      }
+    }
+
+    if (changed && opts.recordHistory) pushHistory();
+    if (opts.redraw) draw();
+    return changed;
+  }
+
+  function paintAt(centerHex) {
+    paintAtCore(centerHex, { recordHistory: true, redraw: true });
+  }
+
+  function drawHexPath(corners) {
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for (let i=1;i<6;i++) ctx.lineTo(corners[i].x, corners[i].y);
+    ctx.closePath();
+  }
+
+  function draw() {
+    const rect = stage.getBoundingClientRect();
+    // Clear in raw canvas pixel space, independent of any transforms/DPR.
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+    updateChips();
+
+    ctx.save();
+    ctx.translate(cam.panX, cam.panY);
+    ctx.scale(cam.zoom, cam.zoom);
+
+    // Background layer (drawn in world-space so it stays aligned with the grid)
+    if (bgImage) {
+      ctx.save();
+      ctx.globalAlpha = bgOpacity;
+      ctx.translate(bgTransform.x, bgTransform.y);
+      ctx.scale(bgTransform.scale, bgTransform.scale);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(bgImage, 0, 0);
+      ctx.restore();
+    }
+
+    ctx.lineWidth = 1 / cam.zoom;
+    ctx.strokeStyle = `rgba(255,255,255,${0.07 * gridOpacity})`;
+
+    layout.size.x = Number(hexSizeEl.value);
+    layout.size.y = Number(hexSizeEl.value);
+    orientationMode = (orientationEl?.value === 'flat') ? 'flat' : 'pointy';
+    layout.orientation = (orientationMode === 'flat') ? ORIENT_FLAT : ORIENT_POINTY;
+
+    for (const h of grid) {
+      const corners = polygonCorners(layout, h);
+      const k = keyOf(h);
+      const t = tiles.get(k);
+
+      if (t) {
+        const info = drawMultiSlotFill(corners, t);
+        // Labels at all zoom levels, but they'll naturally shrink in world-space.
+        if (info && info.active && info.active.length) {
+          drawMultiSlotLabels(info);
+        }
+      }
+
+      drawHexPath(corners);
+      ctx.stroke();
+
+      if (selectedKeys.has(k)) {
+        ctx.save();
+        ctx.lineWidth = (lastSelected && k === keyOf(lastSelected) ? 4 : 2) / cam.zoom;
+        ctx.strokeStyle = (lastSelected && k === keyOf(lastSelected)) ? 'rgba(110,231,255,0.90)' : 'rgba(110,231,255,0.45)';
+        drawHexPath(corners);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    if (false && cam.zoom >= 0.85) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const fontPx = Math.max(10, Math.min(14, 12/cam.zoom));
+      ctx.font = `${fontPx}px ${getComputedStyle(document.documentElement).getPropertyValue('--mono')}`;
+      for (const [k, t] of tiles.entries()) {
+        const h = parseKey(k);
+        const p = hexToPixel(layout, h);
+        ctx.fillStyle = 'rgba(231,237,245,0.85)';
+        if (t.type === 'plant' && t.value) ctx.fillText(String(t.value), p.x, p.y);
+        else if (t.type && t.type !== 'plant') {
+          const letter = t.type === 'structure' ? 'S' : (t.type === 'path' ? 'P' : 'W');
+          const v = t.value ? String(t.value) : '';
+          ctx.fillText(letter + (v ? `:${v}` : ''), p.x, p.y);
+        }
+      }
+    }
+
+    ctx.restore();
+    markLegendDirty();
+  }
+
+  function screenPoint(e) {
+    const rect = stage.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function screenToWorld(p) { return { x: (p.x - cam.panX) / cam.zoom, y: (p.y - cam.panY) / cam.zoom }; }
+
+  function pickHexAtScreenPoint(pScreen) {
+    const pWorld = screenToWorld(pScreen);
+    const h = pixelToHex(layout, pWorld);
+    if (hexDistance(axial(0,0), h) <= gridRadius) return h;
+    return null;
+  }
+
+  function resize() {
+    const rect = stage.getBoundingClientRect();
+    const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
+  }
+
+  function zoomAt(screenX, screenY, zoomFactor) {
+    const before = screenToWorld({x: screenX, y: screenY});
+    cam.zoom = clamp(cam.zoom * zoomFactor, 0.2, 4.0);
+    const after = screenToWorld({x: screenX, y: screenY});
+    cam.panX += (after.x - before.x) * cam.zoom;
+    cam.panY += (after.y - before.y) * cam.zoom;
+    draw();
+  }
+
+  function fitToGrid() {
+    let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    for (const h of grid) {
+      const corners = polygonCorners(layout, h);
+      for (const c of corners) { minX = Math.min(minX, c.x); minY = Math.min(minY, c.y); maxX = Math.max(maxX, c.x); maxY = Math.max(maxY, c.y); }
+    }
+    const rect = stage.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    const gw = maxX - minX, gh = maxY - minY;
+    const padding = 24;
+    const sx = (w - padding*2) / gw;
+    const sy = (h - padding*2) / gh;
+    cam.zoom = clamp(Math.min(sx, sy), 0.2, 3.0);
+    const cx = (minX + maxX)/2, cy = (minY + maxY)/2;
+    cam.panX = w/2 - cx * cam.zoom;
+    cam.panY = h/2 - cy * cam.zoom;
+    draw();
+  }
+
+  function centerGrid() {
+    const rect = stage.getBoundingClientRect();
+    cam.panX = rect.width/2;
+    cam.panY = rect.height/2;
+    draw();
+  }
+
+  // CSV parsing + column guess (id,name,color)
+  function parseCSV(text) {
+    const rows = [];
+    let i = 0, field = '', row = [], inQuotes = false;
+    while (i < text.length) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (text[i+1] === '"') { field += '"'; i += 2; continue; }
+          inQuotes = false; i++; continue;
+        } else { field += ch; i++; continue; }
+      } else {
+        if (ch === '"') { inQuotes = true; i++; continue; }
+        if (ch === ',') { row.push(field); field = ''; i++; continue; }
+        if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+        if (ch === '\r') { i++; continue; }
+        field += ch; i++; continue;
+      }
+    }
+    row.push(field); rows.push(row);
+    return rows;
+  }
+
+  function guessColumns(headers) {
+    const h = headers.map(x => String(x||'').trim().toLowerCase());
+    const idx = (names) => { for (const name of names) { const j = h.indexOf(name); if (j >= 0) return j; } return -1; };
+    return {
+      typeIdx: idx(['type','tile_type','tile type','kind','category']),
+      idIdx: idx(['id','plantid','plant_id','plant id','number','index']),
+      nameIdx: idx(['name','commonname','common_name','common name','label','title']),
+      colorIdx: idx(['color','color_hex','colorhex','hex','hexcolor','hex_color','colour','colour_hex','colourhex','hexcode','hex_code'])
+    };
+  }
+
+  function loadPlantDictionaryFromCSV(text) {
+    // Supports BOTH formats:
+    // 1) Legacy plants-only: id,name,color
+    // 2) New typed dictionary: type,id,name,color
+    tileDict.clear();
+    plantDict.clear();
+
+    const rows = parseCSV(text).filter(r => r.some(x => String(x||'').trim().length));
+    if (!rows.length) return { ok:false, reason:'empty' };
+
+    const headers = rows[0].map(x => String(x||'').trim());
+    const { typeIdx, idIdx, nameIdx, colorIdx } = guessColumns(headers);
+
+    // Heuristic: if first row looks like headers (non-numeric in id col), skip it.
+    const _typeIdx = typeIdx; // may be -1
+    const _idIdx = idIdx >= 0 ? idIdx : 0;
+    const _nameIdx = nameIdx >= 0 ? nameIdx : 1;
+    const _colorIdx = colorIdx >= 0 ? colorIdx : 2;
+
+    let startRow = 0;
+    const firstIdCell = String(rows[0][_idIdx] ?? '').trim();
+    if (!/^-?\d+$/.test(firstIdCell)) startRow = 1;
+
+    for (let i=startRow; i<rows.length; i++) {
+      const r = rows[i];
+
+      // Determine type: from column if present, else assume plant.
+      let type = 'plant';
+      if (_typeIdx != null && _typeIdx >= 0) {
+        const tr = String(r[_typeIdx] ?? '').trim().toLowerCase();
+        if (tr) type = tr;
+      }
+
+      const idRaw = String(r[_idIdx] ?? '').trim();
+      if (!/^-?\d+$/.test(idRaw)) continue;
+      const id = Math.trunc(Number(idRaw));
+      if (!Number.isFinite(id) || id <= 0) continue;
+
+      const name = String(r[_nameIdx] ?? '').trim() || `${type} ${id}`;
+      const color = normalizeHexColor(String(r[_colorIdx] ?? '').trim());
+
+      const key = `${type}:${id}`;
+      tileDict.set(key, { type, id, name, color });
+
+      if (type === 'plant') {
+        plantDict.set(id, { id, name, color });
+      }
+    }
+
+    dictLoaded = tileDict.size > 0 || plantDict.size > 0;
+    dictStatusEl.textContent = dictLoaded ? 'yes' : 'no';
+    dictCountEl.textContent = String(tileDict.size || plantDict.size);
+
+    updateSelectionPanel();
+    draw();
+    return { ok: dictLoaded, count: tileDict.size || plantDict.size };
+  }
+
+function exportPlantDictionaryCSV() {
+    // Export typed dictionary if present, otherwise fall back to plants-only.
+    const lines = ["type,id,name,color"];
+
+    if (tileDict.size) {
+      const entries = Array.from(tileDict.values()).sort((a,b) => {
+        const ta = String(a.type), tb = String(b.type);
+        if (ta !== tb) return ta.localeCompare(tb);
+        return (a.id||0) - (b.id||0);
+      });
+      for (const e of entries) {
+        const type = String(e.type ?? 'plant').toLowerCase();
+        const id = Math.trunc(Number(e.id));
+        const name = String(e.name ?? `${type} ${id}`).replaceAll('"','""');
+        const color = e.color ?? "";
+        lines.push(`${type},${id},"${name}",${color}`);
+      }
+      download("tile_dictionary.csv", lines.join("\n") + "\n", "text/csv");
+      return;
+    }
+
+    // Legacy export
+    const ids = Array.from(plantDict.keys()).sort((a,b)=>a-b);
+    for (const id of ids) {
+      const e = plantDict.get(id);
+      const name = (e?.name ?? `Plant ${id}`).replaceAll('"','""');
+      const color = e?.color ?? "";
+      lines.push(`plant,${id},"${name}",${color}`);
+    }
+    download("tile_dictionary.csv", lines.join("\n") + "\n", "text/csv");
+  }
+
+// Copy/Paste payload
+  function makeClipboardPayload() {
+    if (!selectedKeys.size) return null;
+    const hexes = Array.from(selectedKeys).map(parseKey);
+    const anchor = lastSelected ? { q: lastSelected.q, r: lastSelected.r } : { q: hexes[0].q, r: hexes[0].r };
+    const payloadTiles = [];
+    for (const h of hexes) {
+      const t = tiles.get(keyOf(h));
+      if (!t) continue;
+      payloadTiles.push({ dq: h.q - anchor.q, dr: h.r - anchor.r, type: t.type, value: t.value ?? null, notes: t.notes ?? "", colorOverride: t.colorOverride ?? null });
+    }
+    return { version: "permahex-clipboard-v1", createdAt: new Date().toISOString(), anchor, tiles: payloadTiles };
+  }
+
+
+  const CLIP_STORAGE_KEY = "permahex_clipboard_v1";
+
+  function parseClipboardText(text) {
+    if (!text) return null;
+    const trimmed = String(text).trim();
+    let candidate = trimmed;
+    // Some clipboard managers wrap JSON in quotes; try to unwrap once.
+    if ((candidate.startsWith('"') && candidate.endsWith('"')) || (candidate.startsWith("'") && candidate.endsWith("'"))) {
+      try { candidate = JSON.parse(candidate); } catch {}
+    }
+    try {
+      const data = JSON.parse(candidate);
+      if (data && data.version === "permahex-clipboard-v1" && Array.isArray(data.tiles)) return data;
+    } catch {}
+    return null;
+  }
+
+  
+
+
+  
+
+
+  
+
+
+
+
+  async function copySelectionToClipboard() {
+    const payload = makeClipboardPayload();
+    if (!payload) return;
+    internalClipboard = payload;
+    try { await navigator.clipboard.writeText(JSON.stringify(payload)); } catch {}
+  }
+
+  async function readClipboardPayload() {
+    try {
+      const text = await navigator.clipboard.readText();
+      const data = JSON.parse(text);
+      if (data && data.version === "permahex-clipboard-v1" && Array.isArray(data.tiles)) return data;
+    } catch {}
+    return internalClipboard;
+  }
+
+  async function pasteClipboardAt(anchorHex) {
+    const payload = await readClipboardPayload();
+    if (!payload || !Array.isArray(payload.tiles)) return;
+    for (const it of payload.tiles) {
+      const h = axial(anchorHex.q + Math.trunc(it.dq), anchorHex.r + Math.trunc(it.dr));
+      if (hexDistance(axial(0,0), h) > gridRadius) continue;
+      setTile(h, { type: it.type, value: (it.value == null ? null : Math.trunc(Number(it.value))), notes: String(it.notes ?? ""), colorOverride: it.colorOverride ? normalizeHexColor(it.colorOverride) : null });
+    }
+    draw();
+  }
+
+  // Wire events
+
+  // v14.9.6: ID label controls
+  if (toggleIdsEl) {
+    toggleIdsEl.addEventListener('change', () => {
+      showIds = !!toggleIdsEl.checked;
+      pushHistory();
+      draw();
+    });
+  }
+  if (idFontSizeEl) {
+    idFontSizeEl.addEventListener('change', () => {
+      const v = Number(idFontSizeEl.value);
+      idFontPx = Number.isFinite(v) ? clamp(v, 6, 72) : 13;
+      pushHistory();
+      draw();
+    });
+  }
+  window.addEventListener('resize', resize);
+
+  // Prevent UI interactions from propagating to the stage/grid handlers
+  const stopStageHit = (e) => { e.stopPropagation(); };
+  hudEl?.addEventListener('pointerdown', stopStageHit);
+  hudEl?.addEventListener('pointermove', stopStageHit);
+  hudEl?.addEventListener('pointerup', stopStageHit);
+  hudEl?.addEventListener('pointercancel', stopStageHit);
+  hexSizeEl.addEventListener('input', draw);
+
+  orientationEl?.addEventListener('change', () => {
+    orientationMode = (orientationEl.value === 'flat') ? 'flat' : 'pointy';
+    layout.orientation = (orientationMode === 'flat') ? ORIENT_FLAT : ORIENT_POINTY;
+    // Refit so the grid stays nicely framed
+    fitToGrid();
+    pushHistory();
+    draw();
+  });
+
+  // Background controls
+  bgOpacityEl?.addEventListener('input', () => {
+    bgOpacity = clamp(Number(bgOpacityEl.value), 0, 1);
+    draw();
+  });
+
+  gridOpacityEl?.addEventListener('input', () => {
+    gridOpacity = clamp(Number(gridOpacityEl.value), 0, 1);
+    draw();
+  });
+
+  fillOpacityEl?.addEventListener('input', () => {
+    fillOpacity = clamp(Number(fillOpacityEl.value), 0, 1);
+    draw();
+  });
+
+  bgLockEl?.addEventListener('change', () => {
+    bgLocked = !!bgLockEl.checked;
+    // If locked, force tool away from movebg to avoid confusion
+    if (bgLocked && toolEl.value === 'movebg') toolEl.value = 'select';
+    draw();
+  });
+
+  bgScaleEl?.addEventListener('input', () => {
+    bgTransform.scale = clamp(Number(bgScaleEl.value), 0.1, 10);
+    draw();
+  });
+
+  bgResetBtn?.addEventListener('click', () => {
+    bgTransform = { x: 0, y: 0, scale: 1 };
+    if (bgScaleEl) bgScaleEl.value = "1";
+    draw();
+  });
+
+  bgClearBtn?.addEventListener('click', () => {
+    bgImage = null;
+    bgDataUrl = null;
+    draw();
+  });
+
+  bgFileEl?.addEventListener('change', async () => {
+    const f = bgFileEl.files?.[0];
+    if (!f) return;
+    // Persist as data URL for export/import + undo history
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("Failed reading image"));
+      reader.readAsDataURL(f);
+    });
+
+    const img = new Image();
+    img.onload = () => {
+      bgImage = img;
+      bgDataUrl = dataUrl;
+      // Center the image on the origin (hex 0,0,0) by placing the image midpoint at (0,0)
+      bgTransform = { x: -img.width / 2, y: -img.height / 2, scale: 1 };
+      if (bgOpacityEl) bgOpacityEl.value = String(bgOpacity);
+      if (bgScaleEl) bgScaleEl.value = "1";
+      pushHistory();
+      draw();
+    };
+    img.src = dataUrl;
+  });
+
+  gridRadiusEl.addEventListener('change', () => {
+    gridRadius = clamp(Math.trunc(Number(gridRadiusEl.value)), 1, 200);
+    gridRadiusEl.value = gridRadius;
+    grid = generateHexagon(gridRadius);
+
+    for (const k of Array.from(tiles.keys())) { const h = parseKey(k); if (hexDistance(axial(0,0), h) > gridRadius) tiles.delete(k); }
+    for (const k of Array.from(selectedKeys)) { const h = parseKey(k); if (hexDistance(axial(0,0), h) > gridRadius) selectedKeys.delete(k); }
+    if (lastSelected && hexDistance(axial(0,0), lastSelected) > gridRadius) lastSelected = null;
+    updateSelectionPanel();
+    pushHistory();
+    draw();
+  });
+
+  fitBtn.addEventListener('click', fitToGrid);
+  centerBtn.addEventListener('click', centerGrid);
+
+  clearBtn.addEventListener('click', () => {
+    if (confirm('Clear the entire map?')) { tiles.clear(); clearSelection(); pushHistory(); draw(); }
+  });
+
+  copyBtn.addEventListener('click', copySelectionToClipboard);
+  pasteBtn.addEventListener('click', async () => { const anchor = hoverHex || lastSelected; if (anchor) await pasteClipboardAt(anchor); });
+
+  if (undoBtn) undoBtn.addEventListener('click', undo);
+  if (redoBtn) redoBtn.addEventListener('click', redo);
+
+  if (legendRefreshBtn) legendRefreshBtn.addEventListener('click', renderLegend);
+
+  clearSelBtn.addEventListener('click', clearSelection);
+
+  applyToSelBtn.addEventListener('click', () => {
+    if (!selectedKeys.size) return;
+    const ttype = applyTypeEl.value;
+    const val = Math.trunc(Number(applyValueEl.value || 0));
+    for (const k of selectedKeys) {
+      const h = parseKey(k);
+      const existing = tiles.get(k) || {};
+      setTile(h, { type: ttype, value: (val > 0 ? val : null), notes: existing.notes ?? "", colorOverride: existing.colorOverride ?? null });
+    }
+    updateSelectionPanel();
+    pushHistory();
+    draw();
+  });
+
+  eraseSelBtn.addEventListener('click', () => {
+    if (!selectedKeys.size) return;
+    for (const k of selectedKeys) tiles.delete(k);
+    clearSelection();
+    pushHistory();
+    draw();
+  });
+
+  saveNotesBtn.addEventListener('click', () => {
+    if (!lastSelected) return;
+    const k = keyOf(lastSelected);
+    const existing = tiles.get(k) || { type: 'plant', value: null, notes: "", colorOverride: null };
+    setTile(lastSelected, { ...existing, notes: selNotesEl.value || "" });
+    updateSelectionPanel();
+    pushHistory();
+    draw();
+  });
+
+  clearNotesBtn.addEventListener('click', () => {
+    if (!lastSelected) return;
+    selNotesEl.value = "";
+    const existing = tiles.get(keyOf(lastSelected));
+    if (!existing) return;
+    setTile(lastSelected, { ...existing, notes: "" });
+    updateSelectionPanel();
+    pushHistory();
+    draw();
+  });
+
+  applyColorsBtn.addEventListener('click', () => {
+    const s = normalizeHexColor(colStructureEl.value) || "#b48cff";
+    const p = normalizeHexColor(colPathEl.value) || "#ffd36e";
+    const w = normalizeHexColor(colWaterEl.value) || "#6ee7ff";
+    colStructureEl.value = s; colPathEl.value = p; colWaterEl.value = w;
+    typeColors.structure = s; typeColors.path = p; typeColors.water = w;
+    pushHistory();
+    draw();
+  });
+
+  resetColorsBtn.addEventListener('click', () => {
+    colStructureEl.value = "#b48cff";
+    colPathEl.value = "#ffd36e";
+    colWaterEl.value = "#6ee7ff";
+    typeColors.structure = colStructureEl.value;
+    typeColors.path = colPathEl.value;
+    typeColors.water = colWaterEl.value;
+    pushHistory();
+    draw();
+  });
+
+  applyOverrideBtn.addEventListener('click', () => {
+    if (!selectedKeys.size) return;
+    const c = normalizeHexColor(overrideColorEl.value);
+    for (const k of selectedKeys) {
+      const h = parseKey(k);
+      const existing = tiles.get(k) || { type: 'plant', value: null, notes: "", colorOverride: null };
+      setTile(h, { ...existing, colorOverride: c });
+    }
+    updateSelectionPanel();
+    pushHistory();
+    draw();
+  });
+
+  clearOverrideBtn.addEventListener('click', () => {
+    if (!selectedKeys.size) return;
+    for (const k of selectedKeys) {
+      const existing = tiles.get(k);
+      if (!existing) continue;
+      setTile(parseKey(k), { ...existing, colorOverride: null });
+    }
+    updateSelectionPanel();
+    pushHistory();
+    draw();
+  });
+
+  dictFileEl.addEventListener('change', async () => {
+    const f = dictFileEl.files?.[0];
+    if (!f) return;
+    const text = await f.text();
+    const res = loadPlantDictionaryFromCSV(text);
+    if (!res.ok) alert('Could not load dictionary. Check CSV format.');
+  });
+
+  exportDictBtn.addEventListener('click', exportPlantDictionaryCSV);
+
+  clearDictBtn.addEventListener('click', () => {
+    tileDict.clear();
+    plantDict.clear();
+    dictLoaded = false;
+    dictStatusEl.textContent = 'no';
+    dictCountEl.textContent = '0';
+    updateSelectionPanel();
+    draw();
+  });
+
+  exportBtn.addEventListener('click', () => {
+    const payload = {
+      version: "permahex-map-v2",
+      createdAt: new Date().toISOString(),
+      layout: { orientation: "pointy", hexSize: Number(hexSizeEl.value) },
+      grid: { shape: "hexagon", radius: gridRadius },
+      defaults: { typeColors },
+      background: { dataUrl: bgDataUrl, transform: bgTransform, opacity: bgOpacity, locked: bgLocked },
+      ui: { gridOpacity, fillOpacity, bgScaleStep: Number(bgScaleStepEl?.value || 0.10) },
+      tiles: Array.from(tiles.entries()).map(([k,v]) => {
+        const [q,r] = k.split(',').map(Number);
+        const slots = Array.isArray(v.slots) ? v.slots : null;
+        const hasSlots = !!(slots && slots.some(x => x && x.type));
+        return { q, r, type: v.type, value: v.value ?? null, notes: v.notes ?? "", colorOverride: v.colorOverride ?? null, slots: hasSlots ? slots : null };
+      })
+    };
+    download(`permahex_map_v2_radius${gridRadius}.json`, JSON.stringify(payload, null, 2));
+  });
+
+  exportPngBtn?.addEventListener('click', () => {
+    // Ensure the canvas is fully drawn at current device-pixel resolution
+    draw();
+
+    // Canvas is already scaled by devicePixelRatio in resize(), so this exports full-res of current view.
+    const dataUrl = canvas.toDataURL('image/png');
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    downloadDataUrl(dataUrl, `hex-map-${ts}.png`);
+  });
+
+  exportFullPngBtn?.addEventListener('click', () => {
+    // Export a PNG whose edges match the full background image bounds.
+    // This temporarily resizes the stage/canvas, renders, exports, then restores the previous view.
+    if (!bgImage) {
+      // No background loaded; fall back to current-view export.
+      draw();
+      const dataUrl = canvas.toDataURL('image/png');
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadDataUrl(dataUrl, `hex-map-full-${ts}.png`);
+      return;
+    }
+
+    // World-space background bounds
+    const wCss = Math.max(1, Math.round(bgImage.width * bgTransform.scale));
+    const hCss = Math.max(1, Math.round(bgImage.height * bgTransform.scale));
+
+    // Save current UI/layout + camera
+    const prev = {
+      stageW: stage.style.width,
+      stageH: stage.style.height,
+      panX: cam.panX, panY: cam.panY, zoom: cam.zoom
+    };
+
+    // Fit the stage to the background bounds (CSS pixels)
+    stage.style.width = wCss + 'px';
+    stage.style.height = hCss + 'px';
+
+    // Camera so that background top-left maps to (0,0) in the export
+    cam.zoom = 1;
+    cam.panX = -bgTransform.x;
+    cam.panY = -bgTransform.y;
+
+    // Recompute canvas backing store, render, export
+    resize();
+    draw();
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    downloadDataUrl(dataUrl, `hex-map-full-${ts}.png`);
+
+    // Restore camera and layout
+    cam.panX = prev.panX; cam.panY = prev.panY; cam.zoom = prev.zoom;
+    stage.style.width = prev.stageW;
+    stage.style.height = prev.stageH;
+    resize();
+    draw();
+  });
+
+
+  function downloadDataUrl(dataUrl, filename) {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  exportImgBtn?.addEventListener('click', () => {
+    // Ensure the canvas is fully drawn at current device-pixel resolution
+    draw();
+
+    // Canvas is already scaled by devicePixelRatio in resize(), so this exports full-res of current view.
+    const dataUrl = canvas.toDataURL('image/png');
+
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    downloadDataUrl(dataUrl, `hex-map-${ts}.png`);
+  });
+
+  importBtn.addEventListener('click', async () => {
+    const f = importFileEl.files?.[0];
+    if (!f) { alert('Choose a JSON file first.'); return; }
+    const text = await f.text();
+    let data;
+    try { data = JSON.parse(text); } catch { alert('Invalid JSON.'); return; }
+    if (!data || !data.grid || !Array.isArray(data.tiles)) { alert('This does not look like a permahex map export.'); return; }
+
+    if (data.layout?.hexSize) hexSizeEl.value = String(clamp(Math.trunc(Number(data.layout.hexSize)), 8, 90));
+    if (data.layout?.orientation) {
+      orientationMode = (data.layout.orientation === 'flat') ? 'flat' : 'pointy';
+      if (orientationEl) orientationEl.value = orientationMode;
+      layout.orientation = (orientationMode === 'flat') ? ORIENT_FLAT : ORIENT_POINTY;
+    }
+    if (data.grid?.radius) {
+      gridRadius = clamp(Math.trunc(Number(data.grid.radius)), 1, 200);
+      gridRadiusEl.value = String(gridRadius);
+      grid = generateHexagon(gridRadius);
+    }
+    // Background
+    if (data.background) {
+      bgDataUrl = data.background.dataUrl || null;
+      bgOpacity = clamp(Number(data.background.opacity ?? bgOpacity), 0, 1);
+      if (bgOpacityEl) bgOpacityEl.value = String(bgOpacity);
+      bgLocked = !!data.background.locked;
+      if (bgLockEl) bgLockEl.checked = bgLocked;
+
+      const tr = data.background.transform || {};
+      bgTransform = {
+        x: Number(tr.x ?? 0) || 0,
+        y: Number(tr.y ?? 0) || 0,
+        scale: clamp(Number(tr.scale ?? 1) || 1, 0.1, 10)
+      };
+      if (bgScaleEl) bgScaleEl.value = String(bgTransform.scale);
+
+      if (bgDataUrl) {
+        const img = new Image();
+        img.onload = () => { bgImage = img; draw(); };
+        img.src = bgDataUrl;
+      } else {
+        bgImage = null;
+      }
+    }
+
+    // UI
+    if (data.ui) {
+      gridOpacity = clamp(Number(data.ui.gridOpacity ?? gridOpacity), 0, 1);
+      if (gridOpacityEl) gridOpacityEl.value = String(gridOpacity);
+      fillOpacity = clamp(Number(data.ui.fillOpacity ?? fillOpacity), 0, 1);
+      if (fillOpacityEl) fillOpacityEl.value = String(fillOpacity);
+      if (bgScaleStepEl && data.ui.bgScaleStep != null) bgScaleStepEl.value = String(clamp(Number(data.ui.bgScaleStep), 0.01, 1));
+    }
+
+    if (data.defaults?.typeColors) {
+      const tc = data.defaults.typeColors;
+      if (tc.structure) colStructureEl.value = normalizeHexColor(tc.structure) || colStructureEl.value;
+      if (tc.path) colPathEl.value = normalizeHexColor(tc.path) || colPathEl.value;
+      if (tc.water) colWaterEl.value = normalizeHexColor(tc.water) || colWaterEl.value;
+      typeColors.structure = normalizeHexColor(colStructureEl.value) || typeColors.structure;
+      typeColors.path = normalizeHexColor(colPathEl.value) || typeColors.path;
+      typeColors.water = normalizeHexColor(colWaterEl.value) || typeColors.water;
+    }
+
+    tiles.clear();
+    for (const t of data.tiles) {
+      if (typeof t?.q !== 'number' || typeof t?.r !== 'number') continue;
+      const h = axial(Math.trunc(t.q), Math.trunc(t.r));
+      if (hexDistance(axial(0,0), h) > gridRadius) continue;
+      const notes = String(t.notes ?? "");
+      const colorOverride = normalizeHexColor(t.colorOverride);
+      const rawType = String(t.type ?? '').trim().toLowerCase();
+      const basicType = (rawType === 'plant' || rawType === 'structure' || rawType === 'path' || rawType === 'water') ? rawType : null;
+      const importedSlots = Array.isArray(t.slots)
+        ? t.slots.slice(0, 6).map((s) => {
+            if (!s || !s.type) return null;
+            const slotType = String(s.type).trim().toLowerCase();
+            if (!(slotType === 'plant' || slotType === 'structure' || slotType === 'path' || slotType === 'water')) return null;
+            const slotValue = (s.value == null) ? null : Math.trunc(Number(s.value));
+            const slotLabel = (s.label == null || String(s.label).trim() === '') ? null : String(s.label);
+            return { type: slotType, value: (slotValue && slotValue > 0) ? slotValue : null, label: slotLabel };
+          })
+        : null;
+      const hasSlots = Array.isArray(importedSlots) && importedSlots.some(s => s && s.type);
+      if (hasSlots) {
+        while (importedSlots.length < 6) importedSlots.push(null);
+        setTile(h, { type: 'multi', value: null, notes, colorOverride, slots: importedSlots });
+        continue;
+      }
+      const value = (t.value == null) ? null : Math.trunc(Number(t.value));
+      setTile(h, { type: basicType || 'plant', value: (value && value > 0) ? value : null, notes, colorOverride, slots: null });
+    }
+
+    clearSelection();
+    fitToGrid();
+    draw();
+  });
+
+  // Pointer interactions
+  stage.addEventListener('pointerdown', (e) => {
+        // Ignore interactions that start on UI (prevents accidental painting while clicking controls)
+        if (e.target && (e.target.closest('.hud') || e.target.closest('aside.panel'))) return;
+
+    stage.setPointerCapture(e.pointerId);
+    const p = screenPoint(e);
+    pointers.set(e.pointerId, p);
+    shiftPan = e.shiftKey;
+
+
+    // Alt-drag paint stroke (hold Alt and drag with left mouse button)
+    const toolNow = toolEl.value;
+    const isPaintTool = (toolNow === 'plant' || toolNow === 'structure' || toolNow === 'path' || toolNow === 'water' || toolNow === 'erase');
+    const leftButton = (e.buttons & 1) === 1;
+
+    if (e.altKey && leftButton && isPaintTool && toolNow !== 'pan' && toolNow !== 'movebg') {
+      altStrokeActive = true;
+      altStrokeKeys = new Set();
+      altStrokeChanged = false;
+
+      // Paint immediately at start point
+      const h0 = pickHexAtScreenPoint(p);
+      if (h0) {
+        const k0 = keyOf(h0);
+        altStrokeKeys.add(k0);
+        altStrokeChanged = paintAtCore(h0, { recordHistory: false, redraw: true }) || altStrokeChanged;
+      }
+      return;
+    }
+
+    // Background move mode (single pointer drag)
+    if (toolEl.value === 'movebg' && pointers.size === 1) {
+      if (bgLocked) return;
+      movingBg = true;
+      bgDragStart = p;
+      bgTransformStart = { ...bgTransform };
+      isDragging = true;
+      dragStart = p;
+      camStart = { ...cam };
+      return;
+    }
+
+    if (pointers.size === 2) {
+      const pts = Array.from(pointers.values());
+      const dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+      pinchStart = { dist: Math.hypot(dx, dy), zoom: cam.zoom, panX: cam.panX, panY: cam.panY, midX: (pts[0].x + pts[1].x)/2, midY: (pts[0].y + pts[1].y)/2 };
+      return;
+    }
+
+    isDragging = true;
+    dragStart = p;
+    camStart = { ...cam };
+  });
+
+  stage.addEventListener('pointermove', (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    const p = screenPoint(e);
+    pointers.set(e.pointerId, p);
+    hoverHex = pickHexAtScreenPoint(p);
+
+if (altStrokeActive) {
+      if (hoverHex) {
+        const kk = keyOf(hoverHex);
+        if (!altStrokeKeys.has(kk)) {
+          altStrokeKeys.add(kk);
+          altStrokeChanged = paintAtCore(hoverHex, { recordHistory: false, redraw: true }) || altStrokeChanged;
+        }
+      }
+      return;
+    }
+
+    if (movingBg && toolEl.value === 'movebg' && bgDragStart && bgTransformStart) {
+      const dx = (p.x - bgDragStart.x) / cam.zoom;
+      const dy = (p.y - bgDragStart.y) / cam.zoom;
+      bgTransform.x = bgTransformStart.x + dx;
+      bgTransform.y = bgTransformStart.y + dy;
+      draw();
+      return;
+    }
+
+    if (pointers.size === 2 && pinchStart) {
+      const pts = Array.from(pointers.values());
+      const dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+      const dist = Math.hypot(dx, dy);
+      const factor = dist / pinchStart.dist;
+
+      const targetZoom = clamp(pinchStart.zoom * factor, 0.2, 4.0);
+      const before = screenToWorld({x: pinchStart.midX, y: pinchStart.midY});
+
+      cam.zoom = targetZoom;
+      cam.panX = pinchStart.panX;
+      cam.panY = pinchStart.panY;
+
+      const after = screenToWorld({x: pinchStart.midX, y: pinchStart.midY});
+      cam.panX += (after.x - before.x) * cam.zoom;
+      cam.panY += (after.y - before.y) * cam.zoom;
+
+      draw();
+      return;
+    }
+
+    if (!isDragging) { draw(); return; }
+
+    const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
+    const tool = toolEl.value;
+    const shouldPan = (tool === 'pan') || shiftPan;
+    if (shouldPan || Math.hypot(dx, dy) > 6) {
+      cam.panX = camStart.panX + dx;
+      cam.panY = camStart.panY + dy;
+      draw();
+    }
+  });
+
+  stage.addEventListener('pointerup', async (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinchStart = null;
+    movingBg = false;
+    bgDragStart = null;
+    bgTransformStart = null;
+    if (!isDragging) return;
+
+    // Commit Alt-stroke as a single undoable step
+    if (altStrokeActive) {
+      if (altStrokeChanged) pushHistory();
+      altStrokeActive = false;
+      altStrokeKeys = new Set();
+      altStrokeChanged = false;
+
+      isDragging = false;
+      dragStart = null;
+      camStart = null;
+      return;
+    }
+
+    const p = screenPoint(e);
+    const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
+    const dist = Math.hypot(dx, dy);
+    const tool = toolEl.value;
+    const shouldPan = (tool === 'pan') || shiftPan;
+
+    if (!shouldPan && dist < 8) {
+      const h = pickHexAtScreenPoint(p);
+      if (h) {
+        if (tool === 'select') {
+          // Shift-click toggles selection in Select mode
+          if (e.shiftKey) toggleSelect(h); else setSingleSelection(h);
+        } else if (tool === 'multiselect') {
+          // Multi-select uses Brush radius as a selection radius:
+          //  - radius > 0: add all hexes in that radius to the selection (union)
+          //  - radius = 0: toggle just the clicked hex (fine-grained add/remove)
+          const selRad = clamp(Math.trunc(Number(brushRadiusEl.value || 0)), 0, 30);
+          if (selRad > 0) {
+            const targets = axialRange(h, selRad);
+            for (const hh of targets) {
+              if (hexDistance(axial(0,0), hh) > gridRadius) continue;
+              selectedKeys.add(keyOf(hh));
+            }
+            lastSelected = h;
+            updateSelectionPanel();
+            draw();
+          } else {
+            toggleSelect(h);
+          }
+        } else {
+          paintAt(h);
+          // After painting, keep selection behavior consistent:
+          // shift toggles, otherwise single-select the painted hex.
+          if (e.shiftKey) toggleSelect(h); else setSingleSelection(h);
+        }
+      }
+    }
+
+    isDragging = false;
+    dragStart = null;
+    camStart = null;
+  });
+
+  stage.addEventListener('pointercancel', (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinchStart = null;
+    isDragging = false;
+  });
+
+  stage.addEventListener('wheel', (e) => {
+    if (e.target && e.target.closest('.hud')) return;
+    e.preventDefault();
+    const rect = stage.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const delta = Math.sign(e.deltaY);
+
+    // If moving background, scale it around cursor in world-space
+    if (toolEl.value === 'movebg') {
+      if (bgLocked) return;
+      const step = clamp(Number(bgScaleStepEl?.value || 0.10), 0.01, 1);
+      const factor = delta > 0 ? (1 - step) : (1 + step);
+
+      const pWorld = screenToWorld({x, y});
+      // Convert cursor into background local coords
+      const lx = (pWorld.x - bgTransform.x) / bgTransform.scale;
+      const ly = (pWorld.y - bgTransform.y) / bgTransform.scale;
+
+      const newScale = clamp(bgTransform.scale * factor, 0.1, 10);
+      // Keep cursor anchored: pWorld = bgTransform + newScale * local
+      bgTransform.x = pWorld.x - lx * newScale;
+      bgTransform.y = pWorld.y - ly * newScale;
+      bgTransform.scale = newScale;
+      if (bgScaleEl) bgScaleEl.value = String(bgTransform.scale);
+
+      draw();
+      return;
+    }
+
+    zoomAt(x, y, delta > 0 ? 0.90 : 1.11);
+  }, { passive: false });
+
+  window.addEventListener('keydown', async (e) => {
+    if (isTypingInUI()) return;
+
+    if (e.key === 'Escape') { clearSelection(); return; }
+
+    // Copy / Paste on plain C / V (avoids fighting the browser's Ctrl shortcuts)
+    if (e.key === 'c' || e.key === 'C') { e.preventDefault(); await copySelectionToClipboard(); return; }
+    if (e.key === 'v' || e.key === 'V') { e.preventDefault(); const anchor = hoverHex || lastSelected; if (anchor) await pasteClipboardAt(anchor); return; }
+
+    // Undo / Redo on plain Z / Y
+    if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); undo(); return; }
+    if (e.key === 'y' || e.key === 'Y') { e.preventDefault(); redo(); return; }
+  });
+
+  
+
+  // Clipboard paste event (Ctrl+V): reads from event.clipboardData without prompting.
+  window.addEventListener('paste', async (e) => {
+    // If user is typing in an input/textarea, let the browser handle paste normally.
+    if (isTypingInUI()) return;
+    const anchor = hoverHex || lastSelected;
+    if (!anchor) return;
+    try {
+      const text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
+      if (!text) return;
+      const parsed = parseClipboardText(text);
+      if (!parsed) return;
+      e.preventDefault();
+      await pasteClipboardAt(anchor, { text });
+    } catch {}
+  });
+
+// Init
+  if (orientationEl) orientationEl.value = orientationMode;
+  if (bgOpacityEl) bgOpacityEl.value = String(bgOpacity);
+  if (gridOpacityEl) gridOpacityEl.value = String(gridOpacity);
+  if (fillOpacityEl) fillOpacityEl.value = String(fillOpacity);
+  if (bgLockEl) bgLockEl.checked = bgLocked;
+  if (bgScaleEl) bgScaleEl.value = String(bgTransform.scale);
+
+  // ============================================================
+  // MCP-ish Bridge + Natural-language Commands + Live Inspector
+  // ============================================================
+
+  // UI
+  const mcpUrlEl = document.getElementById('mcpUrl');
+  const mcpConnectBtn = document.getElementById('mcpConnect');
+  const mcpDisconnectBtn = document.getElementById('mcpDisconnect');
+  const mcpDot = document.getElementById('mcpDot');
+  const mcpStatusEl = document.getElementById('mcpStatus');
+  const mcpCmdEl = document.getElementById('mcpCommand');
+  const mcpRunBtn = document.getElementById('mcpRun');
+  const mcpExplainBtn = document.getElementById('mcpExplain');
+  const mcpCopySelJsonBtn = document.getElementById('mcpCopySelJson');
+  const mcpLogEl = document.getElementById('mcpLog');
+  const inspectorHoverEl = document.getElementById('inspectorHover');
+  const inspectorSelEl = document.getElementById('inspectorSel');
+
+  function logMCP(msg) {
+    if (!mcpLogEl) return;
+    const ts = new Date().toLocaleTimeString();
+    mcpLogEl.textContent = `[${ts}] ${msg}\n` + mcpLogEl.textContent;
+  }
+
+  function setMCPStatus(kind, text) {
+    if (mcpStatusEl) mcpStatusEl.textContent = text;
+    if (mcpDot) {
+      mcpDot.classList.remove('ok','bad','mid');
+      mcpDot.classList.add(kind);
+      mcpDot.title = text;
+    }
+  }
+
+  // Tools and Resources surface
+  const MCP_TOOLS = {
+    "paint_hexes": {
+      description: "Paint one or more centers with a brush radius. Preserves notes/colors unless overwritten via args.",
+      args: { type:"plant|structure|path|water", value:"int|null", centers:"[{q,r},...]", radius:"int>=0", mode:"replace|preserveNotes|preserveAll" }
+    },
+    "erase_hexes": {
+      description: "Erase tiles at centers within radius.",
+      args: { centers:"[{q,r},...]", radius:"int>=0" }
+    },
+    "set_hex": {
+      description: "Set exactly one hex to a type/value/notes/colorOverride (nulls allowed).",
+      args: { q:"int", r:"int", type:"plant|structure|path|water", value:"int|null", notes:"string?", colorOverride:"#RRGGBB|null" }
+    },
+    "select_hexes": {
+      description: "Modify selection (set/add/toggle/clear).",
+      args: { mode:"set|add|toggle|clear", hexes:"[{q,r},...]" }
+    },
+    "apply_to_selection": {
+      description: "Apply type/value to current selection.",
+      args: { type:"plant|structure|path|water", value:"int|null" }
+    },
+    "set_override_color": {
+      description: "Set/clear color override for selection.",
+      args: { colorOverride:"#RRGGBB|null" }
+    },
+    "set_notes": {
+      description: "Set notes on a single hex.",
+      args: { q:"int", r:"int", notes:"string" }
+    },
+    "view": {
+      description: "Camera helpers.",
+      args: { action:"fit|center", zoom:"number?", panX:"number?", panY:"number?" }
+    },
+    "export_map": {
+      description: "Return the current map JSON payload (same as Export JSON button).",
+      args: {}
+    },
+    "import_map_payload": {
+      description: "Import a map payload object (same schema as Export JSON).",
+      args: { payload:"object" }
+    }
+  };
+
+  const MCP_RESOURCES = {
+    "resource://selection": "Current selection set + lastSelected tile info.",
+    "resource://hover": "Hover hex + tile info.",
+    "resource://legend": "Legend entries derived from painted tiles.",
+    "resource://map/settings": "Grid + defaults + camera + background config.",
+    "resource://hex/{q},{r}": "Tile data for a specific hex."
+  };
+
+  function readResource(uri) {
+    const now = new Date().toISOString();
+    if (uri === "resource://selection") {
+      const keys = Array.from(selectedKeys);
+      const last = lastSelected ? { q:lastSelected.q, r:lastSelected.r } : null;
+      const lastTile = lastSelected ? (tiles.get(keyOf(lastSelected)) || null) : null;
+      return {
+        uri, now,
+        count: keys.length,
+        selectedKeys: keys,
+        lastSelected: last,
+        lastSelectedTile: lastTile,
+        lastSelectedName: (lastTile?.type === 'plant' && lastTile?.value) ? (plantDict.get(lastTile.value)?.name || null) : null
+      };
+    }
+    if (uri === "resource://hover") {
+      const h = hoverHex ? { q:hoverHex.q, r:hoverHex.r } : null;
+      const t = hoverHex ? (tiles.get(keyOf(hoverHex)) || null) : null;
+      return {
+        uri, now,
+        hover: h,
+        hoverTile: t,
+        hoverName: (t?.type === 'plant' && t?.value) ? (plantDict.get(t.value)?.name || null) : null
+      };
+    }
+    if (uri === "resource://legend") {
+      return { uri, now, entries: computeLegendEntries() };
+    }
+    if (uri === "resource://map/settings") {
+      return {
+        uri, now,
+        grid: { radius: gridRadius, hexSize: Number(hexSizeEl.value), orientation: orientationMode },
+        defaults: { typeColors: { ...typeColors }, gridOpacity, fillOpacity },
+        camera: { ...cam },
+        background: { hasImage: !!bgDataUrl, opacity: bgOpacity, locked: bgLocked, transform: { ...bgTransform }, scaleStep: Number(bgScaleStepEl?.value || 0.10) }
+      };
+    }
+    const m = uri.match(/^resource:\/\/hex\/(-?\d+),(-?\d+)$/);
+    if (m) {
+      const q = Number(m[1]), r = Number(m[2]);
+      const h = axial(q,r);
+      const k = keyOf(h);
+      return { uri, now, hex: {q,r}, tile: tiles.get(k) || null };
+    }
+    return { uri, now, error: "Unknown resource URI" };
+  }
+
+  function toolCall(name, args) {
+    if (!name || !MCP_TOOLS[name]) return { ok:false, error:`Unknown tool: ${name}` };
+
+    const safeInt = (x) => (x == null ? null : Math.trunc(Number(x)));
+    const safeCenters = (centers) => Array.isArray(centers) ? centers.map(h => ({ q: safeInt(h.q), r: safeInt(h.r) })).filter(h => Number.isFinite(h.q) && Number.isFinite(h.r)) : [];
+
+    try {
+      if (name === "paint_hexes") {
+        const type = String(args?.type || "").toLowerCase();
+        if (!["plant","structure","path","water"].includes(type)) return { ok:false, error:"paint_hexes: invalid type" };
+        const value = safeInt(args?.value);
+        const radius = clamp(safeInt(args?.radius ?? 0) ?? 0, 0, 30);
+        const centers = safeCenters(args?.centers);
+        const mode = String(args?.mode || "preserveNotes").toLowerCase(); // preserveNotes|preserveAll|replace
+
+        let changed = false;
+        for (const c of centers) {
+          const center = axial(c.q, c.r);
+          const targets = axialRange(center, radius);
+          for (const h of targets) {
+            if (hexDistance(axial(0,0), h) > gridRadius) continue;
+            const k = keyOf(h);
+            const existing = tiles.get(k) || {};
+            const next = {
+              type,
+              value: (value && value > 0) ? value : null,
+              notes: (mode === "replace") ? "" : (existing.notes ?? ""),
+              colorOverride: (mode === "preserveall") ? (existing.colorOverride ?? null) : (existing.colorOverride ?? null),
+            };
+            const prev = tiles.get(k);
+            if (!prev || prev.type !== next.type || prev.value !== next.value || prev.notes !== next.notes || prev.colorOverride !== next.colorOverride) {
+              setTile(h, next);
+              changed = true;
+            }
+          }
+        }
+        if (changed) { pushHistory(); draw(); }
+        return { ok:true, changed };
+      }
+
+      if (name === "erase_hexes") {
+        const radius = clamp(safeInt(args?.radius ?? 0) ?? 0, 0, 30);
+        const centers = safeCenters(args?.centers);
+        let changed = false;
+        for (const c of centers) {
+          const center = axial(c.q, c.r);
+          for (const h of axialRange(center, radius)) {
+            if (hexDistance(axial(0,0), h) > gridRadius) continue;
+            const k = keyOf(h);
+            if (tiles.has(k)) { tiles.delete(k); changed = true; }
+          }
+        }
+        if (changed) { pushHistory(); draw(); }
+        return { ok:true, changed };
+      }
+
+      if (name === "set_hex") {
+        const q = safeInt(args?.q), r = safeInt(args?.r);
+        const type = String(args?.type || "").toLowerCase();
+        if (!Number.isFinite(q) || !Number.isFinite(r)) return { ok:false, error:"set_hex: q/r required" };
+        if (!["plant","structure","path","water"].includes(type)) return { ok:false, error:"set_hex: invalid type" };
+        const h = axial(q,r);
+        if (hexDistance(axial(0,0), h) > gridRadius) return { ok:false, error:"set_hex: outside grid" };
+        setTile(h, {
+          type,
+          value: safeInt(args?.value),
+          notes: String(args?.notes ?? ""),
+          colorOverride: args?.colorOverride ? normalizeHexColor(args.colorOverride) : null
+        });
+        pushHistory(); draw();
+        return { ok:true };
+      }
+
+      if (name === "select_hexes") {
+        const mode = String(args?.mode || "set").toLowerCase();
+        const hexes = safeCenters(args?.hexes);
+        if (mode === "clear") {
+          clearSelection();
+          return { ok:true };
+        }
+        if (!hexes.length) return { ok:false, error:"select_hexes: no hexes" };
+        if (mode === "set") selectedKeys.clear();
+        for (const c of hexes) {
+          const h = axial(c.q, c.r);
+          if (hexDistance(axial(0,0), h) > gridRadius) continue;
+          const k = keyOf(h);
+          if (mode === "toggle") {
+            if (selectedKeys.has(k)) selectedKeys.delete(k);
+            else selectedKeys.add(k);
+          } else {
+            selectedKeys.add(k);
+          }
+          lastSelected = h;
+        }
+        updateSelectionPanel();
+        draw();
+        return { ok:true, count: selectedKeys.size };
+      }
+
+      if (name === "apply_to_selection") {
+        if (!selectedKeys.size) return { ok:false, error:"No selection" };
+        const type = String(args?.type || "").toLowerCase();
+        if (!["plant","structure","path","water"].includes(type)) return { ok:false, error:"Invalid type" };
+        const value = safeInt(args?.value);
+        for (const k of selectedKeys) {
+          const h = parseKey(k);
+          const existing = tiles.get(k) || {};
+          setTile(h, { type, value: (value && value > 0) ? value : null, notes: existing.notes ?? "", colorOverride: existing.colorOverride ?? null });
+        }
+        updateSelectionPanel();
+        pushHistory(); draw();
+        return { ok:true };
+      }
+
+      if (name === "set_override_color") {
+        if (!selectedKeys.size) return { ok:false, error:"No selection" };
+        const c = args?.colorOverride ? normalizeHexColor(args.colorOverride) : null;
+        for (const k of selectedKeys) {
+          const h = parseKey(k);
+          const existing = tiles.get(k) || { type: 'plant', value: null, notes: "", colorOverride: null };
+          setTile(h, { ...existing, colorOverride: c });
+        }
+        updateSelectionPanel();
+        pushHistory(); draw();
+        return { ok:true };
+      }
+
+      if (name === "set_notes") {
+        const q = safeInt(args?.q), r = safeInt(args?.r);
+        if (!Number.isFinite(q) || !Number.isFinite(r)) return { ok:false, error:"set_notes: q/r required" };
+        const h = axial(q,r);
+        const k = keyOf(h);
+        const existing = tiles.get(k) || { type: 'plant', value: null, notes: "", colorOverride: null };
+        setTile(h, { ...existing, notes: String(args?.notes ?? "") });
+        if (lastSelected && lastSelected.q === q && lastSelected.r === r) updateSelectionPanel();
+        pushHistory(); draw();
+        return { ok:true };
+      }
+
+      if (name === "view") {
+        const action = String(args?.action || "").toLowerCase();
+        if (action === "fit") fitToGrid();
+        else if (action === "center") centerGrid();
+        if (args?.zoom != null) cam.zoom = clamp(Number(args.zoom), 0.2, 4.0);
+        if (args?.panX != null) cam.panX = Number(args.panX);
+        if (args?.panY != null) cam.panY = Number(args.panY);
+        draw();
+        return { ok:true, camera: { ...cam } };
+      }
+
+      if (name === "export_map") {
+        // Mirror export button payload
+        const payload = {
+          version: "permahex-map-v2",
+          createdAt: new Date().toISOString(),
+          layout: { orientation: orientationMode, hexSize: Number(hexSizeEl.value) },
+          grid: { shape: "hexagon", radius: gridRadius },
+          defaults: { typeColors: { ...typeColors } },
+          background: { dataUrl: bgDataUrl, transform: { ...bgTransform }, opacity: bgOpacity, locked: bgLocked },
+          ui: { gridOpacity, fillOpacity, bgScaleStep: Number(bgScaleStepEl?.value || 0.10) },
+          tiles: Array.from(tiles.entries()).map(([k,v]) => {
+            const [q,r] = k.split(',').map(Number);
+            const slots = Array.isArray(v.slots) ? v.slots : null;
+        const hasSlots = !!(slots && slots.some(x => x && x.type));
+        return { q, r, type: v.type, value: v.value ?? null, notes: v.notes ?? "", colorOverride: v.colorOverride ?? null, slots: hasSlots ? slots : null };
+          })
+        };
+        return { ok:true, payload };
+      }
+
+      if (name === "import_map_payload") {
+        const payload = args?.payload;
+        if (!payload || typeof payload !== "object") return { ok:false, error:"import_map_payload: payload object required" };
+        // Accept the same structure as import button would parse
+        // Minimal: translate into state & apply
+        const state = {
+          gridRadius: payload.grid?.radius ?? payload.gridRadius ?? gridRadius,
+          hexSize: payload.layout?.hexSize ?? payload.hexSize ?? Number(hexSizeEl.value),
+          orientation: payload.layout?.orientation ?? payload.orientation ?? orientationMode,
+          typeColors: payload.defaults?.typeColors ?? payload.typeColors ?? typeColors,
+          bg: payload.background ? {
+            dataUrl: payload.background.dataUrl ?? null,
+            transform: payload.background.transform ?? { ...bgTransform },
+            opacity: payload.background.opacity ?? bgOpacity,
+            locked: payload.background.locked ?? bgLocked,
+          } : null,
+          ui: payload.ui ?? null,
+          tiles: Array.isArray(payload.tiles) ? payload.tiles.map(t => [`${t.q},${t.r}`, { type:t.type, value:t.value ?? null, notes:t.notes ?? "", colorOverride:t.colorOverride ?? null }]) : []
+        };
+        applyState(state);
+        pushHistory();
+        draw();
+        return { ok:true };
+      }
+
+      return { ok:false, error:"Tool exists but not implemented" };
+    } catch (e) {
+      return { ok:false, error: String(e?.message || e) };
+    }
+  }
+
+  // Minimal command parser (offline fallback)
+  function parseNaturalCommand(raw) {
+    const s = String(raw || "").trim();
+    if (!s) return null;
+
+    // If JSON, accept:
+    // 1) {tool:"paint_hexes", args:{...}}
+    // 2) JSON-RPC: {jsonrpc:"2.0", id:1, method:"tools/call", params:{name:"...", arguments:{...}}}
+    if (s.startsWith("{") || s.startsWith("[")) {
+      try {
+        const obj = JSON.parse(s);
+        if (obj && obj.method === "tools/call") return { kind:"rpc", obj };
+        if (obj && obj.tool) return { kind:"tool", name: String(obj.tool), args: obj.args || {} };
+      } catch {}
+    }
+
+    const low = s.toLowerCase();
+
+    // paint <type> <id> radius <n> at <q>,<r>
+    let m = low.match(/^paint\s+(plant|structure|path|water)\s+(-?\d+)\s+(?:radius|r)\s+(\d+)\s+at\s+(-?\d+)\s*,\s*(-?\d+)\s*$/);
+    if (m) {
+      const [, type, id, radius, q, r] = m;
+      return { kind:"tool", name:"paint_hexes", args:{ type, value: Number(id), radius: Number(radius), centers:[{q:Number(q), r:Number(r)}] } };
+    }
+
+    // paint <type> <id> at q,r  (radius 0)
+    m = low.match(/^paint\s+(plant|structure|path|water)\s+(-?\d+)\s+at\s+(-?\d+)\s*,\s*(-?\d+)\s*$/);
+    if (m) {
+      const [, type, id, q, r] = m;
+      return { kind:"tool", name:"paint_hexes", args:{ type, value: Number(id), radius: 0, centers:[{q:Number(q), r:Number(r)}] } };
+    }
+
+    // erase radius n at q,r
+    m = low.match(/^erase\s+(?:radius|r)\s+(\d+)\s+at\s+(-?\d+)\s*,\s*(-?\d+)\s*$/);
+    if (m) {
+      const [, radius, q, r] = m;
+      return { kind:"tool", name:"erase_hexes", args:{ radius:Number(radius), centers:[{q:Number(q), r:Number(r)}] } };
+    }
+
+    // select/toggle/add/clear
+    m = low.match(/^(select|toggle|add)\s+at\s+(-?\d+)\s*,\s*(-?\d+)\s*$/);
+    if (m) {
+      const [, modeWord, q, r] = m;
+      const mode = modeWord === "add" ? "add" : (modeWord === "toggle" ? "toggle" : "set");
+      return { kind:"tool", name:"select_hexes", args:{ mode, hexes:[{q:Number(q), r:Number(r)}] } };
+    }
+    if (low === "clear selection") return { kind:"tool", name:"select_hexes", args:{ mode:"clear", hexes:[] } };
+
+    // view fit/center
+    if (low === "fit") return { kind:"tool", name:"view", args:{ action:"fit" } };
+    if (low === "center") return { kind:"tool", name:"view", args:{ action:"center" } };
+
+    return null;
+  }
+
+  // Inspector UI updates
+  function updateInspectorPanels() {
+    try {
+      const hover = readResource("resource://hover");
+      const sel = readResource("resource://selection");
+      if (inspectorHoverEl) inspectorHoverEl.textContent = JSON.stringify(hover, null, 2);
+      if (inspectorSelEl) inspectorSelEl.textContent = JSON.stringify(sel, null, 2);
+    } catch {}
+  }
+
+  // Keep inspector live (cheap and cheerful)
+  let inspectorRAF = null;
+  function scheduleInspectorUpdate() {
+    if (inspectorRAF) return;
+    inspectorRAF = requestAnimationFrame(() => {
+      inspectorRAF = null;
+      updateInspectorPanels();
+      // if connected + subscribed, also push resource updates
+      mcpMaybePush();
+    });
+  }
+
+  // Hook into existing render loop points
+  const _origUpdateSelectionPanel = updateSelectionPanel;
+  updateSelectionPanel = function() {
+    _origUpdateSelectionPanel();
+    scheduleInspectorUpdate();
+    mcpMarkDirty("resource://selection");
+  };
+
+  // Whenever legend is marked dirty, treat legend as changed too.
+  const _origMarkLegendDirty = markLegendDirty;
+  markLegendDirty = function() {
+    _origMarkLegendDirty();
+    mcpMarkDirty("resource://legend");
+    scheduleInspectorUpdate();
+  };
+
+  // MCP WebSocket bridge (optional)
+  const mcp = {
+    ws: null,
+    pending: new Map(),
+    subs: new Set(),
+    dirty: new Set(),
+    pushTimer: null,
+    lastPushAt: 0
+  };
+
+  function mcpSend(obj) {
+    if (!mcp.ws || mcp.ws.readyState !== 1) return false;
+    mcp.ws.send(JSON.stringify(obj));
+    return true;
+  }
+
+  function mcpReply(id, result, error) {
+    const msg = { jsonrpc:"2.0", id, result: result ?? null };
+    if (error) msg.error = { code: -32000, message: String(error) };
+    mcpSend(msg);
+  }
+
+  function mcpNotify(method, params) {
+    mcpSend({ jsonrpc:"2.0", method, params });
+  }
+
+  function mcpMarkDirty(uri) {
+    mcp.dirty.add(uri);
+  }
+
+  function mcpMaybePush() {
+    if (!mcp.ws || mcp.ws.readyState !== 1) return;
+    if (!mcp.subs.size) return;
+    if (!mcp.dirty.size) return;
+
+    // throttle to ~20 fps max
+    const now = performance.now();
+    if (now - mcp.lastPushAt < 50) return;
+    mcp.lastPushAt = now;
+
+    for (const uri of Array.from(mcp.dirty)) {
+      mcp.dirty.delete(uri);
+      if (mcp.subs.has(uri)) {
+        const data = readResource(uri);
+        mcpNotify("resources/changed", { uri, data });
+      }
+    }
+  }
+
+  function mcpConnect(url) {
+    try {
+      if (mcp.ws) { try { mcp.ws.close(); } catch {} }
+      setMCPStatus("mid", "connecting…");
+      const ws = new WebSocket(url);
+      mcp.ws = ws;
+
+      ws.onopen = () => {
+        setMCPStatus("ok", "connected");
+        logMCP(`Connected: ${url}`);
+        // Advertise capabilities
+        mcpNotify("mcp/hello", { tools: MCP_TOOLS, resources: MCP_RESOURCES });
+        // Default subscriptions
+        mcp.subs.add("resource://selection");
+        mcp.subs.add("resource://hover");
+        mcp.subs.add("resource://legend");
+        mcpMarkDirty("resource://selection");
+        mcpMarkDirty("resource://hover");
+        mcpMarkDirty("resource://legend");
+        scheduleInspectorUpdate();
+      };
+
+      ws.onclose = () => {
+        setMCPStatus("bad", "disconnected");
+        logMCP("Disconnected.");
+        mcp.ws = null;
+      };
+
+      ws.onerror = () => {
+        setMCPStatus("bad", "error");
+        logMCP("WebSocket error (is your bridge server running?)");
+      };
+
+      ws.onmessage = (ev) => {
+        let msg = null;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+
+        // JSON-RPC request handling
+        if (msg && msg.jsonrpc === "2.0" && msg.method) {
+          const id = msg.id;
+
+          // tools/call
+          if (msg.method === "tools/call") {
+            const name = msg.params?.name;
+            const args = msg.params?.arguments ?? {};
+            const res = toolCall(String(name||""), args);
+            logMCP(`tools/call ${name} → ${res.ok ? "ok" : "err"}`);
+            if (id != null) mcpReply(id, res, res.ok ? null : res.error);
+            return;
+          }
+
+          // resources/read
+          if (msg.method === "resources/read") {
+            const uri = String(msg.params?.uri || "");
+            const data = readResource(uri);
+            logMCP(`resources/read ${uri}`);
+            if (id != null) mcpReply(id, data, data?.error);
+            return;
+          }
+
+          // resources/subscribe
+          if (msg.method === "resources/subscribe") {
+            const uri = String(msg.params?.uri || "");
+            if (uri) mcp.subs.add(uri);
+            mcpMarkDirty(uri);
+            scheduleInspectorUpdate();
+            if (id != null) mcpReply(id, { ok:true, subscribed:Array.from(mcp.subs) }, null);
+            return;
+          }
+
+          // resources/unsubscribe
+          if (msg.method === "resources/unsubscribe") {
+            const uri = String(msg.params?.uri || "");
+            if (uri) mcp.subs.delete(uri);
+            if (id != null) mcpReply(id, { ok:true, subscribed:Array.from(mcp.subs) }, null);
+            return;
+          }
+
+          // list capabilities
+          if (msg.method === "mcp/capabilities") {
+            if (id != null) mcpReply(id, { tools:MCP_TOOLS, resources:MCP_RESOURCES }, null);
+            return;
+          }
+        }
+      };
+    } catch (e) {
+      setMCPStatus("bad", "failed");
+      logMCP(`Failed to connect: ${String(e?.message || e)}`);
+    }
+  }
+
+  function mcpDisconnect() {
+    if (!mcp.ws) return;
+    try { mcp.ws.close(); } catch {}
+    mcp.ws = null;
+    setMCPStatus("mid", "offline");
+  }
+
+  // Command run button (offline parsing, also echoes to MCP if connected)
+  function runCommand() {
+    const raw = (mcpCmdEl?.value || "").trim();
+    if (!raw) return;
+
+    const parsed = parseNaturalCommand(raw);
+    if (!parsed) {
+      logMCP("Could not parse command. Click “Show available tools/resources” for the grammar.");
+      return;
+    }
+
+    // If user pasted an RPC, execute it locally like the bridge would.
+    if (parsed.kind === "rpc") {
+      const obj = parsed.obj;
+      if (obj.method === "tools/call") {
+        const res = toolCall(String(obj.params?.name || ""), obj.params?.arguments || {});
+        logMCP(`(local) tools/call ${obj.params?.name} → ${res.ok ? "ok" : "err"}`);
+        if (!res.ok) logMCP(res.error);
+      } else if (obj.method === "resources/read") {
+        const data = readResource(String(obj.params?.uri || ""));
+        logMCP(`(local) resources/read ${obj.params?.uri}`);
+        logMCP(JSON.stringify(data, null, 2));
+      } else {
+        logMCP(`(local) Unsupported method: ${obj.method}`);
+      }
+      scheduleInspectorUpdate();
+      return;
+    }
+
+    // Tool call
+    const res = toolCall(parsed.name, parsed.args);
+    if (!res.ok) logMCP(`Error: ${res.error}`);
+    else logMCP(`Ran tool: ${parsed.name}`);
+
+    // If connected, also send a mirrored tools/call (useful if your bridge wants to observe)
+    if (mcp.ws && mcp.ws.readyState === 1) {
+      mcpNotify("tools/ran_locally", { name: parsed.name, arguments: parsed.args, result: res });
+    }
+
+    scheduleInspectorUpdate();
+  }
+
+  function explainMCP() {
+    const lines = [];
+    lines.push("Available tools (paste JSON: {\"tool\":\"name\",\"args\":{...}}):");
+    for (const [k,v] of Object.entries(MCP_TOOLS)) lines.push(`- ${k}: ${v.description}`);
+    lines.push("");
+    lines.push("Available resources (URI):");
+    for (const [k,v] of Object.entries(MCP_RESOURCES)) lines.push(`- ${k}: ${v}`);
+    lines.push("");
+    lines.push("Natural-language command grammar:");
+    lines.push("- paint <type> <id> radius <n> at q,r");
+    lines.push("- paint <type> <id> at q,r");
+    lines.push("- erase radius <n> at q,r");
+    lines.push("- select|add|toggle at q,r");
+    lines.push("- clear selection");
+    lines.push("- fit | center");
+    logMCP(lines.join("\n"));
+  }
+
+  async function copySelectionJSON() {
+    const data = readResource("resource://selection");
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      logMCP("Copied selection JSON to clipboard.");
+    } catch {
+      logMCP("Could not access clipboard (browser permissions).");
+    }
+  }
+
+  mcpConnectBtn?.addEventListener('click', () => mcpConnect(String(mcpUrlEl?.value || "ws://localhost:8765").trim() || "ws://localhost:8765"));
+  mcpDisconnectBtn?.addEventListener('click', mcpDisconnect);
+  mcpRunBtn?.addEventListener('click', runCommand);
+  mcpExplainBtn?.addEventListener('click', explainMCP);
+  mcpCopySelJsonBtn?.addEventListener('click', copySelectionJSON);
+
+  // Keyboard shortcut: Ctrl+Enter runs command (doesn't steal your C/V/Z/Y)
+  mcpCmdEl?.addEventListener('keydown', (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runCommand(); }
+  });
+
+  // Ensure inspector stays current when hovering changes
+  let _prevHoverKey = null;
+  const _origPickHexAtScreenPoint = pickHexAtScreenPoint;
+  pickHexAtScreenPoint = function(pScreen) {
+    const h = _origPickHexAtScreenPoint(pScreen);
+    // We'll update hover in the pointermove handler, but this keeps things consistent if called elsewhere.
+    return h;
+  };
+
+  // Patch pointer move: detect hover changes by polling each frame after draw calls.
+  // We already set hoverHex in existing pointermove logic; this just watches it.
+  function watchHover() {
+    const hk = hoverHex ? keyOf(hoverHex) : null;
+    if (hk !== _prevHoverKey) {
+      _prevHoverKey = hk;
+      mcpMarkDirty("resource://hover");
+      scheduleInspectorUpdate();
+    }
+    requestAnimationFrame(watchHover);
+  }
+  requestAnimationFrame(watchHover);
+  const appVersionEl = document.getElementById("appVersionDisplay");
+  if (appVersionEl) appVersionEl.textContent = APP_VERSION;
+
+  resize();
+  centerGrid();
+  fitToGrid();
+  updateSelectionPanel();
+  pushHistory();
+  draw();
+})();
+</script>
+
+
+</body>
+</html>
