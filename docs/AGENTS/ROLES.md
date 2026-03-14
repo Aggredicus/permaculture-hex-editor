@@ -6,6 +6,36 @@ Each agent represents a specialized discipline found in real engineering teams a
 
 The goal of the agent system is to maintain **clear decision structures, reliable development workflows, and high software quality** while remaining compatible with Cursor IDE agent execution.
 
+Most roles described here are **dormant specialists**. For typical work on the hex editor, only a small **core trio** is active:
+
+- Router / Systems Architect
+- Frontend Implementer
+- Verifier
+
+These three roles are orchestrated according to the routing rules in `docs/AGENTS/ROUTING_RULES.md`, and their work is summarized using the episode schema in `docs/AGENTS/EPISODE_SCHEMA.md`.
+
+---
+
+## Execution Model (Router → Implementer → Verifier)
+
+1. **Router / Systems Architect**
+   - Classifies the task (UI, import/export, performance, docs, etc.).
+   - Selects which agents to activate (usually at most 3 at a time).
+   - Defines token budget and relevant files/regions (see `docs/ARCHITECTURE_MAP.md`).
+   - Chooses 1–3 relevant prior episodes from `docs/AGENTS/EPISODE_LOG.md`.
+
+2. **Frontend Implementer**
+   - Reads only the files and regions identified by the Router.
+   - Applies code or documentation changes with focused diffs.
+   - Records an episode describing files/regions read, changes made, and key observations.
+
+3. **Verifier**
+   - Reviews diffs and acceptance criteria.
+   - Performs behavioral and basic UX/accessibility checks where relevant.
+   - Records an episode describing checks performed, result, and confidence.
+
+All other roles in this document are **available**, but the Router only activates them when the task clearly requires their specialty.
+
 ---
 
 # Core Development Roles
@@ -18,7 +48,8 @@ These roles represent the primary product development workflow.
 4. **UX Designer** – Designs interface layout, usability, and visual clarity.
 5. **UX Researcher** – Studies user behavior and recommends usability improvements.
 6. **Lead Software Designer** – Ensures overall product design coherence.
-7. **Systems Architect** – Defines system architecture and technical direction.
+7. **Systems Architect** – Defines system architecture and technical direction.  
+   - **Activation**: Always active as part of the **Router** role.
 
 ---
 
@@ -32,8 +63,10 @@ These roles ensure system correctness, reliability, and usability.
 11. **Software QC Technician** – Performs exploratory testing and defect discovery.
 12. **QC Engineer** – Builds diagnostic tools and validation utilities.
 13. **QC Director** – Governs overall quality control and release readiness.
-14. **Performance Engineer** – Ensures system performance and scalability.
-15. **Accessibility Engineer** – Ensures inclusive usability across all user abilities.
+14. **Performance Engineer** – Ensures system performance and scalability.  
+    - **Activation**: Dormant specialist; Router activates for rendering or performance issues.
+15. **Accessibility Engineer** – Ensures inclusive usability across all user abilities.  
+    - **Activation**: Dormant specialist; Router activates for accessibility or mobile UX tasks.
 
 ---
 
@@ -41,13 +74,20 @@ These roles ensure system correctness, reliability, and usability.
 
 These roles support analytical systems and data-driven development.
 
-16. **Data Ecologist** – Maintains ecological and environmental dataset accuracy.
-17. **Data Science Engineer** – Builds statistical analysis pipelines.
-18. **Data Quality Engineer** – Ensures dataset integrity and consistency.
-19. **Machine Learning Engineer** – Develops predictive and learning models.
-20. **Spatial Data Engineer** – Manages geographic and spatial datasets.
-21. **Simulation Engineer** – Develops and validates simulation models.
-22. **Research Scientist** – Conducts scientific investigation and experimental validation.
+16. **Data Ecologist** – Maintains ecological and environmental dataset accuracy.  
+    - **Activation**: Dormant specialist; Router activates when ecological datasets or plant dictionaries are in scope.
+17. **Data Science Engineer** – Builds statistical analysis pipelines.  
+    - **Activation**: Dormant specialist; rarely needed for core hex editor changes.
+18. **Data Quality Engineer** – Ensures dataset integrity and consistency.  
+    - **Activation**: Dormant specialist; used when validating or migrating large datasets.
+19. **Machine Learning Engineer** – Develops predictive and learning models.  
+    - **Activation**: Dormant specialist; used only for ML‑related extensions.
+20. **Spatial Data Engineer** – Manages geographic and spatial datasets.  
+    - **Activation**: Dormant specialist; Router activates for GIS/spatial integration work.
+21. **Simulation Engineer** – Develops and validates simulation models.  
+    - **Activation**: Dormant specialist; used for simulation‑heavy features.
+22. **Research Scientist** – Conducts scientific investigation and experimental validation.  
+    - **Activation**: Dormant specialist; used when research‑grade validation is required.
 
 ---
 
@@ -55,9 +95,12 @@ These roles support analytical systems and data-driven development.
 
 These roles maintain system stability and operational reliability.
 
-23. **DevOps Engineer** – Manages deployment pipelines and infrastructure.
-24. **Security Engineer** – Implements application security protections.
-25. **Security Director** – Oversees system security strategy and risk mitigation.
+23. **DevOps Engineer** – Manages deployment pipelines and infrastructure.  
+    - **Activation**: Dormant specialist; Router activates for CI/CD or hosting changes.
+24. **Security Engineer** – Implements application security protections.  
+    - **Activation**: Dormant specialist; Router activates for import/export, file handling, or WebSocket/MCP security concerns.
+25. **Security Director** – Oversees system security strategy and risk mitigation.  
+    - **Activation**: Dormant specialist; used for high‑level security design decisions.
 
 ---
 
@@ -65,10 +108,14 @@ These roles maintain system stability and operational reliability.
 
 These roles coordinate execution and maintain project organization.
 
-26. **Scrum Master Project Manager** – Facilitates sprint workflows and team coordination.
-27. **Kanban Project Manager** – Maintains continuous workflow management.
-28. **Program Manager** – Aligns multiple projects and long‑term roadmap goals.
-29. **Risk Analyst** – Identifies technical, schedule, and operational risks.
+26. **Scrum Master Project Manager** – Facilitates sprint workflows and team coordination.  
+    - **Activation**: Dormant specialist; generally simulated only for process modeling.
+27. **Kanban Project Manager** – Maintains continuous workflow management.  
+    - **Activation**: Dormant specialist; used for flow/process improvements.
+28. **Program Manager** – Aligns multiple projects and long‑term roadmap goals.  
+    - **Activation**: Dormant specialist; used for multi‑initiative planning.
+29. **Risk Analyst** – Identifies technical, schedule, and operational risks.  
+    - **Activation**: Dormant specialist; used when risks must be explicitly modeled.
 
 ---
 
@@ -76,10 +123,14 @@ These roles coordinate execution and maintain project organization.
 
 These roles maintain ethical alignment, collaboration health, and long‑term sustainability.
 
-30. **AI Ethicist** – Provides ethical guidance for AI systems and automation.
-31. **Human Ethicist** – Represents human moral agency and human‑in‑the‑loop oversight.
-32. **Organizational Psychologist** – Supports healthy collaboration dynamics.
-33. **Documentation Steward** – Maintains accurate documentation and knowledge continuity.
+30. **AI Ethicist** – Provides ethical guidance for AI systems and automation.  
+    - **Activation**: Dormant specialist; Router activates for governance, automation, or data‑ethics questions.
+31. **Human Ethicist** – Represents human moral agency and human‑in‑the‑loop oversight.  
+    - **Activation**: Dormant specialist; used when human impact or consent is central.
+32. **Organizational Psychologist** – Supports healthy collaboration dynamics.  
+    - **Activation**: Dormant specialist; rarely needed for code changes.
+33. **Documentation Steward** – Maintains accurate documentation and knowledge continuity.  
+    - **Activation**: Dormant specialist; Router activates for documentation‑heavy tasks.
 
 ---
 
